@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useRef, useMemo } from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +11,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RouteParamList } from '../types/RouteTypes';
@@ -67,14 +67,24 @@ function CreateAppScreen(): React.JSX.Element {
   }, [navigation, headerLeft]);
 
   // Auto-detect HTML and switch to preview
-  const handleCodeChange = useCallback((text: string) => {
-    setHtmlCode(text);
-    const shouldShowPreview = isHtmlContent(text);
-    setShowPreview(shouldShowPreview);
-    if (shouldShowPreview) {
-      setHasError(false);
-    }
-  }, []);
+  const handleCodeChange = useCallback(
+    (text: string) => {
+      setHtmlCode(text);
+      const shouldShowPreview = isHtmlContent(text);
+      setShowPreview(shouldShowPreview);
+      if (shouldShowPreview) {
+        setHasError(false);
+        // Auto-fill app name from HTML <title> if name is empty
+        if (!appName.trim()) {
+          const match = text.match(/<title[^>]*>(.*?)<\/title>/i);
+          if (match) {
+            setAppName(match[1].trim().slice(0, MAX_NAME_LENGTH));
+          }
+        }
+      }
+    },
+    [appName]
+  );
 
   // Import file from document picker
   const handleImportFile = useCallback(async () => {
@@ -325,7 +335,7 @@ function CreateAppScreen(): React.JSX.Element {
   }, [appName, htmlCode, captureScreenshot, handleSaveWithoutScreenshot]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

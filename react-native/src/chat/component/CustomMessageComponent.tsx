@@ -20,7 +20,6 @@ import {
   View,
 } from 'react-native';
 import Share from 'react-native-share';
-import { MessageProps } from 'react-native-gifted-chat';
 import { CustomMarkdownRenderer } from './markdown/CustomMarkdownRenderer.tsx';
 import { MarkedStyles } from 'react-native-marked/src/theme/types.ts';
 import { ChatStatus, PressMode, SwiftChatMessage } from '../../types/Chat.ts';
@@ -47,7 +46,9 @@ import {
 } from '../../storage/StorageUtils.ts';
 import CitationList from './CitationList';
 
-interface CustomMessageProps extends MessageProps<SwiftChatMessage> {
+export interface CustomMessageProps {
+  currentMessage: SwiftChatMessage;
+  position?: 'left' | 'right';
   chatStatus: ChatStatus;
   isLastAIMessage?: boolean;
   searchPhase?: string;
@@ -61,7 +62,7 @@ interface CustomMessageProps extends MessageProps<SwiftChatMessage> {
     userMessageIndex: number,
     newText?: string
   ) => void;
-  flatListRef?: RefObject<FlatList<SwiftChatMessage>>;
+  flatListRef?: RefObject<FlatList<SwiftChatMessage> | null>;
   isAppMode?: boolean;
 }
 
@@ -90,7 +91,6 @@ const CustomMessageComponent: React.FC<CustomMessageProps> = ({
   const [isEdit, setIsEdit] = useState(false);
   const [editText, setEditText] = useState(currentMessage?.text || '');
 
-  const [inputHeight, setInputHeight] = useState(0);
   const chatStatusRef = useRef(chatStatus);
   const textInputRef = useRef<TextInput>(null);
   const [inputTextSelection, setInputTextSelection] = useState<
@@ -165,7 +165,8 @@ const CustomMessageComponent: React.FC<CustomMessageProps> = ({
   }, [currentMessage?.text]);
 
   const handleRegenerate = useCallback(() => {
-    // For AI message: userMessageIndex = messageIndex + 1
+    // For inverted list [newest...oldest]: AI message (index 0) is before user message (index 1)
+    // So userMessageIndex = messageIndex + 1
     if (messageIndex !== undefined) {
       const userMessageIndex = messageIndex + 1;
       regenerateFromUserMessage?.(userMessageIndex);
@@ -386,7 +387,9 @@ const CustomMessageComponent: React.FC<CustomMessageProps> = ({
                   ? isDark
                     ? require('../../assets/done_dark.png')
                     : require('../../assets/done.png')
-                  : require('../../assets/copy_grey.png')
+                  : isDark
+                    ? require('../../assets/copy_grey.png')
+                    : require('../../assets/copy.png')
               }
               style={styles.reasoningCopyIcon}
             />
@@ -660,20 +663,13 @@ const CustomMessageComponent: React.FC<CustomMessageProps> = ({
               showSoftInputOnFocus={isUser.current ? true : false}
               value={isUser.current ? editText : undefined}
               onChangeText={isUser.current ? setEditText : undefined}
-              onContentSizeChange={event => {
-                const { height } = event.nativeEvent.contentSize;
-                setInputHeight(height);
-              }}
               style={{
                 ...styles.inputText,
                 ...{
                   fontWeight: isMac ? '300' : 'normal',
-                  lineHeight: isMac ? 26 : Platform.OS === 'android' ? 24 : 28,
+                  lineHeight: isMac ? 26 : 24,
                   paddingTop: Platform.OS === 'android' ? 7 : 3,
-                  marginBottom: isUser.current
-                    ? 0
-                    : -inputHeight * (isAndroid ? 0 : isMac ? 0.115 : 0.138) +
-                      (isMac ? 10 : 8),
+                  paddingBottom: 8,
                 },
                 ...(isUser.current && {
                   backgroundColor: colors.messageBackground,
@@ -855,7 +851,6 @@ const createStyles = (colors: ColorScheme) =>
       marginRight: 4,
     },
     reasoningCopyIcon: {
-      padding: 4,
       width: 16,
       height: 16,
     },
@@ -893,7 +888,7 @@ const createStyles = (colors: ColorScheme) =>
 
 const customMarkedStyles: MarkedStyles = {
   table: { marginVertical: 4 },
-  li: { paddingVertical: 4 },
+  list: { marginVertical: 4 },
   h1: { fontSize: 28 },
   h2: { fontSize: 24 },
   h3: { fontSize: 20 },

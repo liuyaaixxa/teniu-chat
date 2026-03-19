@@ -13,7 +13,7 @@ import {
   FileInfo,
   SavedApp,
 } from '../types/Chat.ts';
-import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import {
   DefaultImageSystemPrompts,
   DefaultRegion,
@@ -30,7 +30,7 @@ const initializeStorage = () => {
   const key = 'encryption_key';
   let encryptionKey = storage.getString(key);
   if (!encryptionKey) {
-    encryptionKey = uuid.v4();
+    encryptionKey = uuidv4();
     storage.set(key, encryptionKey);
   }
 
@@ -79,6 +79,7 @@ const lastVirtualTryOnImgFileTag = keyPrefix + 'lastVirtualTryOnImgFileTag';
 const searchProviderKey = keyPrefix + 'searchProviderKey';
 const tavilyApiKeyTag = keyPrefix + 'tavilyApiKeyTag';
 const savedAppsKey = keyPrefix + 'savedAppsKey';
+const googleLoginDoneKey = keyPrefix + 'googleLoginDoneKey';
 
 let currentApiUrl: string | undefined;
 let currentApiKey: string | undefined;
@@ -756,6 +757,14 @@ export function getSearchProvider(): string {
   return currentSearchProvider;
 }
 
+export function saveGoogleLoginDone() {
+  storage.set(googleLoginDoneKey, true);
+}
+
+export function isGoogleLoginDone(): boolean {
+  return storage.getBoolean(googleLoginDoneKey) ?? false;
+}
+
 export function saveTavilyApiKey(apiKey: string) {
   currentTavilyApiKey = apiKey;
   encryptStorage.set(tavilyApiKeyTag, apiKey);
@@ -805,7 +814,7 @@ export function migrateOpenAICompatConfig() {
   if (baseUrl || apiKey || modelIds) {
     const domain = extractDomainFromUrl(baseUrl);
     const newConfig: OpenAICompatConfig = {
-      id: uuid.v4(),
+      id: uuidv4(),
       baseUrl,
       apiKey,
       modelIds,
@@ -899,7 +908,7 @@ export function getAppById(appId: string): SavedApp | undefined {
 }
 
 export function generateAppId(): string {
-  return uuid.v4();
+  return uuidv4();
 }
 
 export function pinApp(appId: string): void {

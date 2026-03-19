@@ -7,6 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 import { FileInfo, FileType } from '../../types/Chat.ts';
 import { CustomAddFileComponent } from './CustomAddFileComponent.tsx';
 import ImageView from 'react-native-image-viewing';
@@ -88,6 +92,22 @@ export const CustomFileListComponent: React.FC<CustomFileProps> = ({
       }, 100);
     }
   }, [files, mode]);
+
+  const renderImageHeader = useCallback(
+    () => (
+      <SafeAreaProvider>
+        <SafeAreaView style={imageHeaderStyles.root} edges={['top']}>
+          <TouchableOpacity
+            style={imageHeaderStyles.closeButton}
+            onPress={() => setIsVisible(false)}
+            hitSlop={{ top: 16, left: 16, bottom: 16, right: 16 }}>
+            <Text style={imageHeaderStyles.closeText}>✕</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    ),
+    [],
+  );
 
   const handleCompression = useCallback(async () => {
     for (const file of filesRef.current) {
@@ -327,6 +347,7 @@ export const CustomFileListComponent: React.FC<CustomFileProps> = ({
         imageIndex={index}
         visible={visible}
         onRequestClose={() => setIsVisible(false)}
+        HeaderComponent={renderImageHeader}
       />
     </ScrollView>
   );
@@ -442,3 +463,25 @@ const getStyles = (colors: ColorScheme) =>
       justifyContent: 'center',
     },
   });
+
+const imageHeaderStyles = StyleSheet.create({
+  root: {
+    alignItems: 'flex-end',
+  },
+  closeButton: {
+    marginRight: 8,
+    marginTop: 8,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: '#00000077',
+  },
+  closeText: {
+    lineHeight: 22,
+    fontSize: 19,
+    textAlign: 'center',
+    color: '#FFF',
+  },
+});

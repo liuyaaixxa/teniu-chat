@@ -4,8 +4,6 @@ import React, {
   type ReactNode,
   useMemo,
   useCallback,
-  memo,
-  useRef,
 } from 'react';
 import {
   Platform,
@@ -23,7 +21,6 @@ import SyntaxHighlighter, {
   type SyntaxHighlighterProps,
 } from 'react-syntax-highlighter';
 import transform, { StyleTuple } from 'css-to-react-native';
-import { isMac } from '../../../App.tsx';
 import { trimNewlines } from 'trim-newlines';
 import ChunkedCodeView from './ChunkedCodeView';
 
@@ -68,17 +65,6 @@ const ALLOWED_STYLE_PROPERTIES: Record<string, boolean> = {
   fontStyle: true,
 };
 
-// Memoized Text component to prevent unnecessary re-renders
-const MemoizedText = memo(
-  ({
-    style,
-    children,
-  }: {
-    style: StyleProp<TextStyle>;
-    children: ReactNode;
-  }) => <Text style={style}>{children}</Text>
-);
-
 export const CustomCodeHighlighter: FunctionComponent<CodeHighlighterProps> = ({
   children,
   textStyle,
@@ -107,116 +93,57 @@ export const CustomCodeHighlighter: FunctionComponent<CodeHighlighterProps> = ({
 
   // Calculate base text style once - used for both PlainTextCodeView and highlighted view
   const baseTextStyle = useMemo(
-    () => [textStyle, { color: stylesheet.hljs?.color }],
+    () => [textStyle, {color: stylesheet.hljs?.color}],
     [textStyle, stylesheet.hljs?.color]
   );
 
-  // Cache of previously processed nodes (must be before conditional return for hooks rules)
-  const processedNodesCache = useRef<ReactNode[][]>([]);
-  const prevNodesLength = useRef<number>(0);
+  // Process a single line's children into Text elements
+  const processLineChildren = useCallback(
+    (lineChildren: rendererNode[] | undefined, lineIndex: number): ReactNode[] => {
+      if (!lineChildren) return [];
 
-  // Process a single node into React elements
-  const processNode = useCallback(
-    (node: rendererNode, index: number): ReactNode[] => {
-      const stack: rendererNode[] = [node];
-      let result: ReactNode[] = [];
-
-      while (stack.length > 0) {
-        const currentNode = stack.pop()!;
-
-        if (currentNode.type === 'text') {
-          result.push(currentNode.value || '');
-        } else if (currentNode.children) {
-          const childElements = currentNode.children.map(
-            (child, childIndex) => {
-              if (child.type === 'text') {
-                const nodeStyles = getStylesForNode(currentNode);
-                return (
-                  <MemoizedText
-                    key={`${index}-${childIndex}`}
-                    style={[...baseTextStyle, ...nodeStyles]}>
-                    {child.value}
-                  </MemoizedText>
-                );
-              } else {
-                const childStyles = getStylesForNode(child);
-                const childContent = child.children
-                  ?.map(grandChild => grandChild.value)
-                  .join('');
-
-                return (
-                  <MemoizedText
-                    key={`${index}-${childIndex}`}
-                    style={[...baseTextStyle, ...childStyles]}>
-                    {childContent}
-                  </MemoizedText>
-                );
-              }
-            }
-          );
-          result = result.concat(childElements);
+      return lineChildren.map((child, childIndex) => {
+        if (child.type === 'text') {
+          // Plain text without styling (spaces, newlines, etc.)
+          return child.value || '';
         }
-      }
-      return result;
+        // Element with className - get its text content
+        const childStyles = getStylesForNode(child);
+        const textContent = child.children
+          ?.map(grandChild => grandChild.value)
+          .join('') ?? '';
+
+        return (
+          <Text key={`${lineIndex}-${childIndex}`} style={childStyles}>
+            {textContent}
+          </Text>
+        );
+      });
     },
-    [baseTextStyle, getStylesForNode]
+    [getStylesForNode]
   );
 
+  // Render all rows - each row wrapped in a Text component for line-based structure
   const renderNode = useCallback(
-    (nodes: rendererNode[]): ReactNode => {
-      // Calculate margin bottom value once
-      const scale =
-        rest.language === 'mermaid'
-          ? 1.75
-          : rest.language === 'html' || rest.language === 'diff'
-          ? isMac
-            ? 2
-            : 1.85
-          : isMac
-          ? 3
-          : 2.82;
-      const marginBottomValue = -nodes.length * scale;
-
-      // Optimization for streaming content - only process new nodes
-      if (nodes.length >= prevNodesLength.current) {
-        // When initial render or nodes are added (streaming case)
-        if (processedNodesCache.current.length === 0) {
-          // First render - process all nodes
-          processedNodesCache.current = nodes.map((node, index) =>
-            processNode(node, index)
-          );
-        } else if (nodes.length > prevNodesLength.current) {
-          // Streaming case - only process new nodes
-          for (let i = prevNodesLength.current; i < nodes.length; i++) {
-            processedNodesCache.current[i] = processNode(nodes[i], i);
-          }
-        }
-        // If same length but content changed (rare in streaming), we'll keep the cache as is
-      } else {
-        // If nodes length decreased (rare case, not typical for streaming)
-        processedNodesCache.current = nodes.map((node, index) =>
-          processNode(node, index)
-        );
-      }
-
-      // Update length reference for next render
-      prevNodesLength.current = nodes.length;
+    (rows: rendererNode[]): ReactNode => {
+      const lines = rows.map((row, lineIndex) => (
+        <Text key={lineIndex} style={baseTextStyle}>
+          {processLineChildren(row.children, lineIndex)}
+        </Text>
+      ));
 
       return (
         <TextInput
-          style={[
-            styles.inputText,
-            {
-              marginBottom: marginBottomValue,
-            },
-          ]}
           editable={false}
-          multiline>
-          {processedNodesCache.current}
+          multiline
+          scrollEnabled={false}
+          textAlignVertical="top"
+          style={styles.codeTextInput}>
+          {lines}
         </TextInput>
       );
     },
-    [processNode, rest.language]
+    [baseTextStyle, processLineChildren]
   );
 
   const renderAndroidNode = useCallback(
@@ -299,9 +226,9 @@ export const CustomCodeHighlighter: FunctionComponent<CodeHighlighterProps> = ({
 };
 
 const styles = StyleSheet.create({
-  inputText: {
+  codeTextInput: {
     lineHeight: 20,
-    marginTop: -5,
+    paddingBottom: 4,
   },
 });
 

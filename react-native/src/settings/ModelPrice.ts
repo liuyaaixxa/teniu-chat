@@ -86,23 +86,59 @@ export const ModelPrice: ModelPriceType = {
       inputTokenPrice: 0.00135,
       outputTokenPrice: 0.0054,
     },
-    'DeepSeek-V3': {
+    'DeepSeek-Chat': {
       inputTokenPrice: 0.00027,
       outputTokenPrice: 0.0011,
     },
-    'DeepSeek-R1': {
+    'DeepSeek-Reasoner': {
       inputTokenPrice: 0.00055,
       outputTokenPrice: 0.00219,
+    },
+    'GPT-5.4': {
+      inputTokenPrice: 0.00125,
+      outputTokenPrice: 0.0075,
+    },
+    'GPT-5.4 Pro': {
+      inputTokenPrice: 0.015,
+      outputTokenPrice: 0.09,
+    },
+    'GPT-5.4 mini': {
+      inputTokenPrice: 0.00075,
+      outputTokenPrice: 0.0045,
+    },
+    'GPT-5.4 nano': {
+      inputTokenPrice: 0.0002,
+      outputTokenPrice: 0.00125,
+    },
+    'GPT-5.3 Chat': {
+      inputTokenPrice: 0.00175,
+      outputTokenPrice: 0.014,
+    },
+    'GPT-5.2': {
+      inputTokenPrice: 0.000875,
+      outputTokenPrice: 0.007,
+    },
+    'GPT-5.2 Pro': {
+      inputTokenPrice: 0.0105,
+      outputTokenPrice: 0.084,
+    },
+    'GPT-5.1': {
+      inputTokenPrice: 0.000625,
+      outputTokenPrice: 0.005,
+    },
+    'GPT-5 Pro': {
+      inputTokenPrice: 0.0075,
+      outputTokenPrice: 0.06,
     },
     'GPT-4.1': {
       inputTokenPrice: 0.002,
       outputTokenPrice: 0.008,
     },
-    'GPT-4.1-mini': {
+    'GPT-4.1 mini': {
       inputTokenPrice: 0.0004,
       outputTokenPrice: 0.0016,
     },
-    'GPT-4.1-nano': {
+    'GPT-4.1 nano': {
       inputTokenPrice: 0.0001,
       outputTokenPrice: 0.0004,
     },
@@ -198,7 +234,15 @@ export const ModelPrice: ModelPriceType = {
       inputTokenPrice: 0.003,
       outputTokenPrice: 0.015,
     },
+    'Claude Sonnet 4.6': {
+      inputTokenPrice: 0.003,
+      outputTokenPrice: 0.015,
+    },
     'Claude Opus 4.5': {
+      inputTokenPrice: 0.005,
+      outputTokenPrice: 0.025,
+    },
+    'Claude Opus 4.6': {
       inputTokenPrice: 0.005,
       outputTokenPrice: 0.025,
     },

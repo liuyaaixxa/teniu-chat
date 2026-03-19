@@ -24,6 +24,7 @@ import { ThemeProvider, useTheme } from './theme';
 import { configureErrorHandling } from './utils/ErrorUtils';
 import { migrateOpenAICompatConfig } from './storage/StorageUtils.ts';
 import { SearchWebView } from './websearch/components/SearchWebView';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export const isMac = isMacCatalyst;
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -148,6 +149,7 @@ const AppWithTheme = () => {
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
+        translucent={isAndroid}
       />
       <NavigationContainer
         onStateChange={_ => {
@@ -168,13 +170,18 @@ const App = () => {
     migrateOpenAICompatConfig();
   }, []);
 
+  // On Mac, we don't need KeyboardProvider
+  const content = (
+    <ThemeProvider>
+      <AppProvider>
+        <AppWithTheme />
+      </AppProvider>
+    </ThemeProvider>
+  );
+
   return (
     <>
-      <ThemeProvider>
-        <AppProvider>
-          <AppWithTheme />
-        </AppProvider>
-      </ThemeProvider>
+      {isMac ? content : <KeyboardProvider>{content}</KeyboardProvider>}
       <Toast />
     </>
   );

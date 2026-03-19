@@ -1,18 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Composer, GiftedChat, InputToolbar } from 'react-native-gifted-chat';
 import {
   AppState,
   Dimensions,
-  FlatList,
   Keyboard,
   LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
-  SafeAreaView,
   StyleSheet,
-  TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   activateKeepAwake,
   deactivateKeepAwake,
@@ -24,10 +21,9 @@ import AudioWaveformComponent, {
 import { ColorScheme, useTheme } from '../theme';
 import { invokeBedrockWithCallBack, requestToken } from '../api/bedrock-api';
 import CustomMessageComponent from './component/CustomMessageComponent.tsx';
-import { CustomScrollToBottomComponent } from './component/CustomScrollToBottomComponent.tsx';
 import { EmptyChatComponent } from './component/EmptyChatComponent.tsx';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { RouteParamList } from '../types/RouteTypes.ts';
 import {
   getCurrentSystemPrompt,
@@ -84,18 +80,30 @@ import {
   replaceHtmlWithPlaceholder,
   replaceDiffWithPlaceholder,
 } from './util/DiffUtils.ts';
+import {
+  CustomChatComponent,
+  CustomChatComponentRef,
+} from './component/CustomChatComponent.tsx';
+import { MessageRenderProps } from './component/MessageList.tsx';
+import {
+  appendMessages,
+  getLatestMessage,
+  updateLatestMessage,
+} from './utils/messageUtils.ts';
+import { backgroundStreamManager } from './service/BackgroundStreamManager.ts';
+import { startBackgroundTaskIfNeeded } from './service/BackgroundTaskService.ts';
 
 const BOT_ID = 2;
 const APP_PROMPT_NAME = 'App';
 
 /**
  * Find the latest htmlCode from AI messages
- * Traverse all AI messages to find the first one with htmlCode
+ * For inverted order [newest...oldest], traverse from start to find latest
  */
 const findLatestHtmlCode = (messages: SwiftChatMessage[]): string => {
-  const aiMessages = messages.filter(m => m.user._id === BOT_ID);
-  for (const msg of aiMessages) {
-    if (msg.htmlCode) {
+  // For inverted: newest is at index 0, traverse from start
+  for (const msg of messages) {
+    if (msg.user._id === BOT_ID && msg.htmlCode) {
       return msg.htmlCode;
     }
   }
@@ -103,16 +111,22 @@ const findLatestHtmlCode = (messages: SwiftChatMessage[]): string => {
 };
 
 /**
- * Check if any AI message has diffCode (for detecting failed diff apply case)
+ * Check if session contains App mode content (htmlCode, diffCode, or html code block in text)
  */
-const hasAnyDiffCode = (messages: SwiftChatMessage[]): boolean => {
-  const aiMessages = messages.filter(m => m.user._id === BOT_ID);
-  return aiMessages.some(msg => msg.diffCode);
+const isAppModeSession = (messages: SwiftChatMessage[]): boolean => {
+  return messages.some(
+    msg =>
+      msg.user._id === BOT_ID &&
+      (msg.htmlCode ||
+        msg.diffCode ||
+        msg.text.includes('```html\n') ||
+        msg.text.includes('[HTML_OUTPUT_OMITTED]'))
+  );
 };
 
 const createBotMessage = (mode: string, isAppMode: boolean = false) => {
   return {
-    _id: uuid.v4(),
+    _id: uuidv4(),
     text: mode === ChatMode.Text ? textPlaceholder : imagePlaceholder,
     createdAt: new Date(),
     user: {
@@ -160,10 +174,9 @@ function ChatScreen(): React.JSX.Element {
   const chatStatusRef = useRef(chatStatus);
   const messagesRef = useRef(messages);
   const bedrockMessages = useRef<BedrockMessage[]>([]);
-  const flatListRef = useRef<FlatList<SwiftChatMessage>>(null);
-  const textInputViewRef = useRef<TextInput>(null);
+  const chatComponentRef = useRef<CustomChatComponentRef>(null);
   const sessionIdRef = useRef(initialSessionId || getSessionId() + 1);
-  const isCanceled = useRef(false);
+  const activeCancelFlagRef = useRef<{ current: boolean }>({ current: false });
   const { sendEvent, event, drawerType } = useAppContext();
   const sendEventRef = useRef(sendEvent);
   const inputTextRef = useRef('');
@@ -184,7 +197,6 @@ function ChatScreen(): React.JSX.Element {
   // App mode state
   const isAppModeRef = useRef(false);
   const endVoiceConversationRef = useRef<(() => Promise<boolean>) | null>(null);
-  const currentScrollOffsetRef = useRef(0);
   const isNewChatRef = useRef(!initialSessionId);
 
   const endVoiceConversation = useCallback(async () => {
@@ -299,13 +311,39 @@ function ChatScreen(): React.JSX.Element {
         <CustomHeaderRightButton
           onPress={() => {
             //clear input content and selected files
-            textInputViewRef?.current?.clear();
+            chatComponentRef.current?.clearInput();
             setUsage(undefined);
             setSelectedFiles([]);
-            if (
-              messagesRef.current.length > 0 &&
-              chatStatusRef.current !== ChatStatus.Running
-            ) {
+            if (messagesRef.current.length > 0) {
+              if (chatStatusRef.current === ChatStatus.Running) {
+                const isAppStreaming =
+                  (isAppModeRef.current ||
+                    systemPromptRef.current?.name === APP_PROMPT_NAME) &&
+                  modeRef.current === ChatMode.Text;
+                if (!isAppStreaming) {
+                  return;
+                }
+                backgroundStreamManager.register(sessionIdRef.current, {
+                  sessionId: sessionIdRef.current,
+                  text:
+                    getLatestMessage(messagesRef.current)?.text || '',
+                  reasoning:
+                    getLatestMessage(messagesRef.current)?.reasoning || '',
+                  usage: usageRef.current,
+                  cancelFlag: activeCancelFlagRef.current,
+                  controller: controllerRef.current!,
+                  htmlCode: getLatestHtmlCode(),
+                  isComplete: false,
+                  needStop: false,
+                  messages: [...messagesRef.current],
+                  bedrockMessages: [...bedrockMessages.current],
+                });
+                saveCurrentMessages();
+                startBackgroundTaskIfNeeded();
+                chatStatusRef.current = ChatStatus.Init;
+                setChatStatus(ChatStatus.Init);
+                sendEventRef.current('updateHistory');
+              }
               startNewChat.current();
             }
           }}
@@ -327,15 +365,47 @@ function ChatScreen(): React.JSX.Element {
         return;
       }
       if (chatStatusRef.current === ChatStatus.Running) {
-        // there are still a request sending, abort the request and save current messages
-        controllerRef.current?.abort();
-        chatStatusRef.current = ChatStatus.Init;
-        if (modeRef.current === ChatMode.Image) {
-          if (messagesRef.current[0].text === imagePlaceholder) {
-            messagesRef.current[0].text = 'Request interrupted';
+        const isAppStreaming =
+          (isAppModeRef.current ||
+            systemPromptRef.current?.name === APP_PROMPT_NAME) &&
+          modeRef.current === ChatMode.Text;
+        if (isAppStreaming) {
+          // App mode: register background stream instead of aborting
+          backgroundStreamManager.register(sessionIdRef.current, {
+            sessionId: sessionIdRef.current,
+            text: getLatestMessage(messagesRef.current)?.text || '',
+            reasoning:
+              getLatestMessage(messagesRef.current)?.reasoning || '',
+            usage: usageRef.current,
+            cancelFlag: activeCancelFlagRef.current,
+            controller: controllerRef.current!,
+            htmlCode: getLatestHtmlCode(),
+            isComplete: false,
+            needStop: false,
+            messages: [...messagesRef.current],
+            bedrockMessages: [...bedrockMessages.current],
+          });
+          saveCurrentMessages();
+          startBackgroundTaskIfNeeded();
+          sendEventRef.current('updateHistory');
+        } else {
+          // Non-App mode: abort as before
+          controllerRef.current?.abort();
+          activeCancelFlagRef.current.current = true;
+          if (modeRef.current === ChatMode.Image) {
+            const lastMsg = getLatestMessage(messagesRef.current);
+            if (lastMsg && lastMsg.text === imagePlaceholder) {
+              setMessages(
+                updateLatestMessage(messagesRef.current, msg => ({
+                  ...msg,
+                  text: 'Request interrupted',
+                }))
+              );
+            }
           }
+          saveCurrentMessages();
         }
-        saveCurrentMessages();
+        chatStatusRef.current = ChatStatus.Init;
       }
       if (modeRef.current !== mode) {
         // when change chat mode, clear system prompt and files
@@ -355,16 +425,62 @@ function ChatScreen(): React.JSX.Element {
       // click from history
       setMessages([]);
       isNewChatRef.current = false;
-      endVoiceConversationRef.current?.();
       setIsLoadingMessages(true);
-      const msg = getMessagesBySessionId(initialSessionId);
       sessionIdRef.current = initialSessionId;
-      setUsage((msg[0] as SwiftChatMessage).usage);
+
+      // Check for active background streaming
+      const bgStream = backgroundStreamManager.get(initialSessionId);
+      if (bgStream) {
+        setLatestHtmlCode(bgStream.htmlCode);
+        isAppModeRef.current = true;
+        if (bgStream.isComplete) {
+          // Background streaming finished - load completed messages
+          setMessages(bgStream.messages);
+          setUsage(bgStream.messages[0]?.usage);
+          getBedrockMessagesFromChatMessages(bgStream.messages).then(m => {
+            bedrockMessages.current = m;
+          });
+        } else {
+          // Still streaming - reconnect UI
+          const restoredMessages = [...bgStream.messages];
+          restoredMessages[0] = {
+            ...restoredMessages[0],
+            text: bgStream.text,
+            reasoning: bgStream.reasoning,
+          };
+          setMessages(restoredMessages);
+          messagesRef.current = restoredMessages;
+          activeCancelFlagRef.current = bgStream.cancelFlag;
+          controllerRef.current = bgStream.controller;
+          bedrockMessages.current = bgStream.bedrockMessages;
+          // Don't restore isNewChat - saveCurrentMessages already saved it during registration
+          // Set both ref and state to Running so callback doesn't skip
+          chatStatusRef.current = ChatStatus.Running;
+          setChatStatus(ChatStatus.Running);
+        }
+        // Only remove completed streams; keep active ones so drawer shows green dot
+        if (bgStream.isComplete) {
+          backgroundStreamManager.remove(initialSessionId);
+        }
+        sendEventRef.current?.('selectAppPrompt');
+        setIsLoadingMessages(false);
+        scrollToBottom();
+        showKeyboard();
+        return;
+      }
+
+      // Only end voice conversation for non-background-stream sessions
+      endVoiceConversationRef.current?.();
+
+      const msg = getMessagesBySessionId(initialSessionId);
+      // Get usage from the latest message (first element in inverted array)
+      const latestMsg = getLatestMessage(msg);
+      setUsage(latestMsg?.usage);
       // restore htmlCode from history
       const restoredHtmlCode = findLatestHtmlCode(msg as SwiftChatMessage[]);
       setLatestHtmlCode(restoredHtmlCode);
 
-      if (restoredHtmlCode || hasAnyDiffCode(msg as SwiftChatMessage[])) {
+      if (isAppModeSession(msg as SwiftChatMessage[])) {
         isAppModeRef.current = true;
         sendEventRef.current?.('selectAppPrompt');
       } else {
@@ -403,9 +519,9 @@ function ChatScreen(): React.JSX.Element {
       setTimeout(() => {
         sendEventRef.current?.('selectAppPrompt');
         // Pre-fill the input with app name hint
-        if (editAppName && textInputViewRef.current) {
+        if (editAppName) {
           const hintText = `Edit [${editAppName}]: `;
-          textInputViewRef.current.setNativeProps({ text: hintText });
+          chatComponentRef.current?.setInputText(hintText);
           inputTextRef.current = hintText;
           setHasInputText(true);
         }
@@ -417,6 +533,11 @@ function ChatScreen(): React.JSX.Element {
   useEffect(() => {
     if (event?.event === 'deleteChat' && event.params) {
       const { id } = event.params;
+      // Stop and clean up any background streaming for this session
+      if (id && backgroundStreamManager.has(id)) {
+        backgroundStreamManager.stop(id);
+        backgroundStreamManager.remove(id);
+      }
       if (sessionIdRef.current === id) {
         sessionIdRef.current = getSessionId() + 1;
         sendEventRef.current('updateHistorySelectedId', {
@@ -435,6 +556,7 @@ function ChatScreen(): React.JSX.Element {
       const { htmlCode } = event.params;
       setMessages(prevMessages => {
         // update isLastHtml for all messages
+        // For inverted: first element (index 0) is the latest message
         const newMessages = prevMessages.map((msg, index) => {
           if (index === 0) {
             return { ...msg, htmlCode: htmlCode, isLastHtml: true };
@@ -455,6 +577,7 @@ function ChatScreen(): React.JSX.Element {
       const { htmlCode, diffCode } = event.params;
       setMessages(prevMessages => {
         // update isLastHtml for all messages
+        // For inverted: first element (index 0) is the latest message
         const newMessages = prevMessages.map((msg, index) => {
           if (index === 0) {
             return {
@@ -477,7 +600,7 @@ function ChatScreen(): React.JSX.Element {
   useEffect(() => {
     const handleKeyboardShow = () => {
       // Only scroll to bottom if the chat input is focused
-      if (textInputViewRef.current?.isFocused()) {
+      if (chatComponentRef.current?.isInputFocused()) {
         scrollToBottom();
       }
     };
@@ -499,7 +622,7 @@ function ChatScreen(): React.JSX.Element {
 
   const showKeyboard = () => {
     setTimeout(() => {
-      textInputViewRef.current?.focus();
+      chatComponentRef.current?.focusInput();
     }, 100);
   };
 
@@ -526,17 +649,23 @@ function ChatScreen(): React.JSX.Element {
         return;
       }
       // In App mode, replace HTML/diff with placeholder to save context tokens
-      const msg = messagesRef.current[0];
-      if (isAppModeRef.current && msg.htmlCode) {
+      // For inverted: latest message is at index 0
+      const msg = getLatestMessage(messagesRef.current);
+      if (msg && isAppModeRef.current && msg.htmlCode) {
         msg.text = replaceHtmlWithPlaceholder(msg.text, msg.htmlCode);
       }
-      if (isAppModeRef.current && msg.diffCode && msg.htmlCode) {
+      if (msg && isAppModeRef.current && msg.diffCode && msg.htmlCode) {
         msg.text = replaceDiffWithPlaceholder(msg.text, msg.diffCode);
       }
       saveCurrentMessages();
-      getBedrockMessage(messagesRef.current[0]).then(currentMsg => {
-        bedrockMessages.current.push(currentMsg);
-      });
+      // Clean up background stream manager entry when streaming completes in foreground
+      backgroundStreamManager.remove(sessionIdRef.current);
+      const latestMsg = getLatestMessage(messagesRef.current);
+      if (latestMsg) {
+        getBedrockMessage(latestMsg).then(currentMsg => {
+          bedrockMessages.current.push(currentMsg);
+        });
+      }
       if (drawerTypeRef.current === 'permanent') {
         sendEventRef.current('updateHistory');
         setTimeout(() => {
@@ -559,6 +688,14 @@ function ChatScreen(): React.JSX.Element {
       if (nextAppState === 'background' || nextAppState === 'inactive') {
         if (chatStatusRef.current === ChatStatus.Running) {
           saveCurrentMessages();
+          // Start background task to keep streaming alive in App mode
+          if (
+            (isAppModeRef.current ||
+              systemPromptRef.current?.name === APP_PROMPT_NAME) &&
+            modeRef.current === ChatMode.Text
+          ) {
+            startBackgroundTaskIfNeeded();
+          }
         }
       }
       if (nextAppState === 'active') {
@@ -595,6 +732,7 @@ function ChatScreen(): React.JSX.Element {
     }
     saveMessages(sessionIdRef.current, messagesRef.current, usageRef.current!);
     if (isNewChatRef.current) {
+      // For inverted: first user message is at the end (oldest)
       saveMessageList(
         sessionIdRef.current,
         messagesRef.current[messagesRef.current.length - 1],
@@ -623,42 +761,28 @@ function ChatScreen(): React.JSX.Element {
     },
   });
 
+  // For inverted list: scroll to top means scroll to the oldest message (end of array)
   const scrollToTop = () => {
     setUserScrolled(true);
-    if (flatListRef.current) {
-      if (messagesRef.current.length > 0) {
-        flatListRef.current.scrollToIndex({
-          index: messagesRef.current.length - 1,
-          animated: true,
-        });
-      }
-    }
-  };
-  const scrollToBottom = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
-    }
-  };
-
-  const scrollUpByHeight = (
-    expanded: boolean,
-    height: number,
-    animated: boolean
-  ) => {
-    if (flatListRef.current) {
-      const newOffset =
-        currentScrollOffsetRef.current + (expanded ? height : -height);
-      flatListRef.current.scrollToOffset({
-        offset: newOffset,
-        animated: animated,
+    if (messagesRef.current.length > 0) {
+      chatComponentRef.current?.scrollToIndex({
+        index: messagesRef.current.length - 1,
+        animated: true,
       });
     }
   };
 
+  // For inverted list: scrollToEnd scrolls to bottom (newest messages)
+  const scrollToBottom = (animated = true) => {
+    chatComponentRef.current?.scrollToEnd({ animated });
+  };
+
+  const scrollOffsetRef = useRef(0);
+
   const handleScroll = (
     scrollEvent: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
-    currentScrollOffsetRef.current = scrollEvent.nativeEvent.contentOffset.y;
+    scrollOffsetRef.current = scrollEvent.nativeEvent.contentOffset.y;
   };
 
   const handleUserScroll = (_: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -672,23 +796,36 @@ function ChatScreen(): React.JSX.Element {
   ) => {
     if (chatStatusRef.current === ChatStatus.Running && userScrolled) {
       const { contentOffset } = endEvent.nativeEvent;
+      // For inverted list: offset 0 means at bottom, check if near bottom
+      // When user scrolls near bottom during streaming, snap to bottom and resume auto-scroll
       if (contentOffset.y > 0 && contentOffset.y < 100) {
         scrollToBottom();
       }
     }
   };
 
-  // Stable callback for reasoning toggle - avoids re-render of CustomMessageComponent
+  // Reasoning/preview toggle callback for inverted list
+  // Need scroll compensation when content expands or collapses
   const handleReasoningToggle = useCallback(
     (expanded: boolean, height: number, animated: boolean) => {
-      scrollUpByHeight(expanded, height, animated);
+      if (height > 0) {
+        const currentOffset = scrollOffsetRef.current;
+        const newOffset = expanded
+          ? currentOffset + height
+          : Math.max(0, currentOffset - height);
+        chatComponentRef.current?.scrollToOffset({
+          offset: newOffset,
+          animated,
+        });
+      }
     },
     []
   );
 
   // invoke bedrock api
   useEffect(() => {
-    const lastMessage = messages[0];
+    // For inverted: latest message is at index 0
+    const lastMessage = getLatestMessage(messages);
     if (
       lastMessage &&
       lastMessage.user &&
@@ -705,11 +842,37 @@ function ChatScreen(): React.JSX.Element {
 
       // Wrap in async function to support await
       (async () => {
-        // Create AbortController before web search so it can be used throughout
+        // Per-streaming cancel flag and session ID capture
+        const streamingSessionId = sessionIdRef.current;
+        const localCancelFlag = { current: false };
+        activeCancelFlagRef.current = localCancelFlag;
         controllerRef.current = new AbortController();
-        isCanceled.current = false;
 
-        // Get the last user message (the one after bot message)
+        // Register in background manager at streaming start for App mode
+        // so the drawer green dot shows immediately
+        if (
+          isAppModeRef.current ||
+          systemPromptRef.current?.name === APP_PROMPT_NAME
+        ) {
+          backgroundStreamManager.register(streamingSessionId, {
+            sessionId: streamingSessionId,
+            text: '',
+            reasoning: '',
+            usage: usageRef.current,
+            cancelFlag: localCancelFlag,
+            controller: controllerRef.current,
+            htmlCode: getLatestHtmlCode(),
+            isComplete: false,
+            needStop: false,
+            messages: [...messagesRef.current],
+            bedrockMessages: [...bedrockMessages.current],
+          });
+          if (isNewChatRef.current) {
+            saveCurrentMessages();
+          }
+        }
+
+        // Get the last user message (for inverted: index 1, after bot message at 0)
         const userMessage = messages.length > 1 ? messages[1]?.text : null;
 
         let webSearchSystemPrompt;
@@ -737,7 +900,7 @@ function ChatScreen(): React.JSX.Element {
         }
 
         // Check if aborted after web search completes
-        if (isCanceled.current) {
+        if (localCancelFlag.current) {
           setChatStatus(ChatStatus.Init);
           setSearchPhase('');
           return;
@@ -767,7 +930,7 @@ function ChatScreen(): React.JSX.Element {
           bedrockMessages.current,
           modeRef.current,
           effectiveSystemPrompt,
-          () => isCanceled.current,
+          () => localCancelFlag.current,
           controllerRef.current,
           (
             msg: string,
@@ -776,6 +939,46 @@ function ChatScreen(): React.JSX.Element {
             usageInfo?: Usage,
             reasoning?: string
           ) => {
+            // Background stream detection: session switched away
+            const isBackground =
+              streamingSessionId !== sessionIdRef.current;
+            if (isBackground) {
+              if (
+                !backgroundStreamManager.isStreaming(streamingSessionId)
+              ) {
+                return;
+              }
+              if (latencyMs === 0) {
+                latencyMs = new Date().getTime() - startRequestTime;
+              }
+              let bgMetrics = metrics;
+              if (usageInfo && !bgMetrics) {
+                const renderSec =
+                  (new Date().getTime() - startRequestTime - latencyMs) /
+                  1000;
+                const speed = usageInfo.outputTokens / renderSec;
+                bgMetrics = {
+                  latencyMs: (latencyMs / 1000).toFixed(2),
+                  speed: speed.toFixed(speed > 100 ? 1 : 2),
+                };
+                metrics = bgMetrics;
+              }
+              backgroundStreamManager.update(streamingSessionId, {
+                text: msg,
+                reasoning,
+                usage: usageInfo,
+                metrics: bgMetrics,
+                citations: webSearchCitations,
+              });
+              if (complete || needStop) {
+                backgroundStreamManager.markComplete(
+                  streamingSessionId,
+                  needStop
+                );
+              }
+              return;
+            }
+
             if (chatStatusRef.current !== ChatStatus.Running) {
               return;
             }
@@ -804,18 +1007,19 @@ function ChatScreen(): React.JSX.Element {
                   };
                 }
               }
-              const previousMessage = messagesRef.current[0];
+              // For inverted: latest message is at index 0
+              const previousMessage = getLatestMessage(messagesRef.current);
               if (
-                previousMessage.text !== msg ||
-                previousMessage.reasoning !== reasoning ||
-                (!previousMessage.metrics && metrics)
+                previousMessage &&
+                (previousMessage.text !== msg ||
+                  previousMessage.reasoning !== reasoning ||
+                  (!previousMessage.metrics && metrics))
               ) {
-                setMessages(prevMessages => {
-                  const newMessages = [...prevMessages];
-                  newMessages[0] = {
-                    ...prevMessages[0],
+                setMessages(prevMessages =>
+                  updateLatestMessage(prevMessages, prevMsg => ({
+                    ...prevMsg,
                     text:
-                      isCanceled.current &&
+                      localCancelFlag.current &&
                       (previousMessage.text === textPlaceholder ||
                         previousMessage.text === '')
                         ? 'Canceled...'
@@ -823,9 +1027,8 @@ function ChatScreen(): React.JSX.Element {
                     reasoning: reasoning,
                     metrics: metrics,
                     citations: webSearchCitations,
-                  };
-                  return newMessages;
-                });
+                  }))
+                );
               }
             };
             const setComplete = () => {
@@ -850,7 +1053,7 @@ function ChatScreen(): React.JSX.Element {
               }, 1000);
             }
             if (needStop) {
-              isCanceled.current = true;
+              localCancelFlag.current = true;
             }
           }
         ).then();
@@ -872,11 +1075,13 @@ function ChatScreen(): React.JSX.Element {
       // Get all history messages after the user message
       const historyMessages = messagesRef.current.slice(userMessageIndex + 1);
 
-      // Update latestHtmlCode for app mode (only if found in history)
+      // Update latestHtmlCode for app mode
       if (isAppModeRef.current) {
         const foundHtmlCode = findLatestHtmlCode(historyMessages);
         if (foundHtmlCode) {
           setLatestHtmlCode(foundHtmlCode);
+        } else if (!newText) {
+          clearLatestHtmlCode();
         }
       }
 
@@ -948,9 +1153,10 @@ function ChatScreen(): React.JSX.Element {
       getBedrockMessage(message[0]).then(currentMsg => {
         bedrockMessages.current.push(currentMsg);
         setChatStatus(ChatStatus.Running);
+        // For inverted: [botMessage, userMessage, ...previousMessages]
         setMessages(previousMessages => [
           createBotMessage(modeRef.current),
-          ...GiftedChat.append(previousMessages, message),
+          ...appendMessages(previousMessages, message),
         ]);
       });
     }
@@ -972,26 +1178,27 @@ function ChatScreen(): React.JSX.Element {
 
   const handleVoiceChatTranscript = (role: string, text: string) => {
     const userId = role === 'USER' ? 1 : BOT_ID;
+    // For inverted: latest message is at index 0
+    const latestMsg = getLatestMessage(messagesRef.current);
     if (
       messagesRef.current.length > 0 &&
-      messagesRef.current[0].user._id === userId
+      latestMsg &&
+      latestMsg.user._id === userId
     ) {
       if (userId === 1) {
         text = ' ' + text;
       }
-      setMessages(previousMessages => {
-        const newMessages = [...previousMessages];
-        if (!newMessages[0].text.includes(text)) {
-          newMessages[0] = {
-            ...newMessages[0],
-            text: newMessages[0].text + text,
-          };
-        }
-        return newMessages;
-      });
+      setMessages(previousMessages =>
+        updateLatestMessage(previousMessages, msg => {
+          if (!msg.text.includes(text)) {
+            return { ...msg, text: msg.text + text };
+          }
+          return msg;
+        })
+      );
     } else {
       const newMessage: SwiftChatMessage = {
-        _id: uuid.v4(),
+        _id: uuidv4(),
         text: text,
         createdAt: new Date(),
         user: {
@@ -1001,94 +1208,63 @@ function ChatScreen(): React.JSX.Element {
         },
       };
 
+      // For inverted: prepend new message at the beginning
       setMessages(previousMessages => [newMessage, ...previousMessages]);
     }
   };
 
   const styles = createStyles(colors, isNovaSonic);
 
+  // Render message function for CustomChatComponent
+  const renderMessage = useCallback(
+    (props: MessageRenderProps) => {
+      const { currentMessage, key } = props;
+      const messageIndex = messages.findIndex(
+        msg => msg._id === currentMessage?._id
+      );
+
+      // For inverted: latest message is at index 0
+      const latestMsg = getLatestMessage(messages);
+      const isLastAIMessage =
+        currentMessage?._id === latestMsg?._id &&
+        currentMessage?.user._id !== 1;
+
+      return (
+        <CustomMessageComponent
+          key={key}
+          currentMessage={currentMessage}
+          position={currentMessage.user._id === 1 ? 'right' : 'left'}
+          chatStatus={chatStatus}
+          isLastAIMessage={isLastAIMessage}
+          searchPhase={isLastAIMessage ? searchPhase : ''}
+          onReasoningToggle={handleReasoningToggle}
+          messageIndex={messageIndex}
+          regenerateFromUserMessage={regenerateFromUserMessage}
+          isAppMode={isAppModeRef.current}
+        />
+      );
+    },
+    [
+      messages,
+      chatStatus,
+      searchPhase,
+      handleReasoningToggle,
+      regenerateFromUserMessage,
+    ]
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
-      <GiftedChat
-        messageContainerRef={flatListRef}
-        textInputRef={textInputViewRef}
-        keyboardShouldPersistTaps="never"
-        bottomOffset={
-          Platform.OS === 'android'
-            ? 0
-            : screenHeight > screenWidth && screenWidth < 500
-            ? 24 // iphone in portrait
-            : 12
-        }
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <CustomChatComponent
+        ref={chatComponentRef}
         messages={messages}
         onSend={onSend}
-        user={{
-          _id: 1,
-        }}
-        alignTop={false}
-        inverted={true}
+        user={{ _id: 1 }}
+        renderMessage={renderMessage}
         renderChatEmpty={() => (
           <EmptyChatComponent
             chatMode={modeRef.current}
             isLoadingMessages={isLoadingMessages}
-          />
-        )}
-        alwaysShowSend={
-          chatStatus !== ChatStatus.Init || selectedFiles.length > 0
-        }
-        renderComposer={props => {
-          if (isNovaSonic && mode === ChatMode.Text) {
-            return <AudioWaveformComponent ref={audioWaveformRef} />;
-          }
-
-          // Default input box
-          return (
-            <Composer {...props} textInputStyle={styles.composerTextInput} />
-          );
-        }}
-        renderSend={props => (
-          <CustomSendComponent
-            {...props}
-            chatStatus={chatStatus}
-            chatMode={mode}
-            selectedFiles={selectedFiles}
-            isShowLoading={isShowVoiceLoading}
-            onStopPress={() => {
-              trigger(HapticFeedbackTypes.notificationWarning);
-              if (isNovaSonic) {
-                // End voice chat conversation
-                endVoiceConversation().then(success => {
-                  if (success) {
-                    trigger(HapticFeedbackTypes.impactMedium);
-                  }
-                });
-                saveCurrentMessages();
-              } else {
-                isCanceled.current = true;
-                controllerRef.current?.abort();
-              }
-            }}
-            onFileSelected={files => {
-              handleNewFileSelected(files);
-            }}
-            onVoiceChatToggle={() => {
-              if (isVoiceLoading.current) {
-                return;
-              }
-              isVoiceLoading.current = true;
-              setIsShowVoiceLoading(true);
-              voiceChatService.startConversation().then(success => {
-                if (!success) {
-                  setChatStatus(ChatStatus.Init);
-                } else {
-                  setChatStatus(ChatStatus.Running);
-                }
-                isVoiceLoading.current = false;
-                setIsShowVoiceLoading(false);
-                trigger(HapticFeedbackTypes.impactMedium);
-              });
-            }}
-            systemPrompt={systemPrompt}
           />
         )}
         renderChatFooter={() => (
@@ -1148,118 +1324,97 @@ function ChatScreen(): React.JSX.Element {
             systemPrompt={systemPrompt}
           />
         )}
-        renderMessage={props => {
-          // Find the index of the current message in the messages array
-          const messageIndex = messages.findIndex(
-            msg => msg._id === props.currentMessage?._id
-          );
-
-          const isLastAIMessage =
-            props.currentMessage?._id === messages[0]?._id &&
-            props.currentMessage?.user._id !== 1;
-
-          return (
-            <CustomMessageComponent
-              {...props}
-              chatStatus={chatStatus}
-              isLastAIMessage={isLastAIMessage}
-              searchPhase={isLastAIMessage ? searchPhase : ''}
-              onReasoningToggle={handleReasoningToggle}
-              messageIndex={messageIndex}
-              regenerateFromUserMessage={regenerateFromUserMessage}
-              flatListRef={flatListRef}
-              isAppMode={isAppModeRef.current}
-            />
-          );
-        }}
-        listViewProps={{
-          contentContainerStyle: styles.contentContainer,
-          contentInset: { top: 2 },
-          onLayout: (layoutEvent: LayoutChangeEvent) => {
-            containerHeightRef.current = layoutEvent.nativeEvent.layout.height;
-          },
-          onScrollEvent: handleScroll,
-          onContentSizeChange: (_width: number, height: number) => {
-            contentHeightRef.current = height;
-          },
-          onScrollBeginDrag: handleUserScroll,
-          onMomentumScrollEnd: handleMomentumScrollEnd,
-          ...(userScrolled &&
-          chatStatus === ChatStatus.Running &&
-          contentHeightRef.current > containerHeightRef.current
-            ? {
-                maintainVisibleContentPosition: {
-                  minIndexForVisible: 0,
-                  autoscrollToTopThreshold: 0,
-                },
+        renderComposer={
+          isNovaSonic && mode === ChatMode.Text
+            ? () => <AudioWaveformComponent ref={audioWaveformRef} />
+            : undefined
+        }
+        renderSend={({ hasText, onPress }) => (
+          <CustomSendComponent
+            text={hasText ? 'has-text' : ''}
+            onSend={(_msg, shouldReset) => {
+              onPress();
+              if (shouldReset) {
+                chatComponentRef.current?.clearInput();
               }
-            : {}),
-        }}
-        scrollToBottom={true}
-        scrollToBottomComponent={CustomScrollToBottomComponent}
-        scrollToBottomStyle={scrollStyle.scrollToBottomContainerStyle}
-        renderInputToolbar={props => (
-          <InputToolbar
-            {...props}
-            containerStyle={styles.inputToolbarContainer}
-            primaryStyle={styles.inputToolbarPrimary}
+            }}
+            chatStatus={chatStatus}
+            chatMode={mode}
+            selectedFiles={selectedFiles}
+            isShowLoading={isShowVoiceLoading}
+            onStopPress={() => {
+              trigger(HapticFeedbackTypes.notificationWarning);
+              if (isNovaSonic) {
+                // End voice chat conversation
+                endVoiceConversation().then(success => {
+                  if (success) {
+                    trigger(HapticFeedbackTypes.impactMedium);
+                  }
+                });
+                saveCurrentMessages();
+              } else {
+                activeCancelFlagRef.current.current = true;
+                controllerRef.current?.abort();
+              }
+            }}
+            onFileSelected={files => {
+              handleNewFileSelected(files);
+            }}
+            onVoiceChatToggle={() => {
+              if (isVoiceLoading.current) {
+                return;
+              }
+              isVoiceLoading.current = true;
+              setIsShowVoiceLoading(true);
+              voiceChatService.startConversation().then(success => {
+                if (!success) {
+                  setChatStatus(ChatStatus.Init);
+                } else {
+                  setChatStatus(ChatStatus.Running);
+                }
+                isVoiceLoading.current = false;
+                setIsShowVoiceLoading(false);
+                trigger(HapticFeedbackTypes.impactMedium);
+              });
+            }}
+            systemPrompt={systemPrompt}
           />
         )}
-        textInputProps={{
-          ...styles.textInputStyle,
-          ...{
-            fontWeight: isMac ? '300' : 'normal',
-            color: colors.text,
-            smartInsertDelete: false,
-            spellCheck: false,
-            blurOnSubmit: isMac,
-            onSubmitEditing: () => {
-              if (
-                inputTextRef.current.length > 0 &&
-                chatStatusRef.current !== ChatStatus.Running
-              ) {
-                const msg: SwiftChatMessage = {
-                  text: inputTextRef.current,
-                  user: { _id: 1 },
-                  createdAt: new Date(),
-                  _id: uuid.v4(),
-                };
-                onSend([msg]);
-                inputTextRef.current = '';
-                setHasInputText(false);
-                textInputViewRef.current?.clear();
-                setTimeout(() => {
-                  textInputViewRef.current?.clear();
-                  textInputViewRef.current?.focus();
-                }, 50);
-              } else {
-                setTimeout(() => {
-                  textInputViewRef.current?.focus();
-                }, 50);
-              }
-            },
-          },
-        }}
         maxComposerHeight={isMac ? 360 : 200}
-        onInputTextChanged={text => {
-          if (
-            isMac &&
-            text.length > 0 &&
-            (text[text.length - 1] === '\n' ||
-              text.length - 1 === inputTextRef.current.length)
-          ) {
-            setTimeout(() => {
-              textInputViewRef.current?.focus();
-            }, 50);
-          }
+        inputToolbarContainerStyle={styles.inputToolbarContainer}
+        inputToolbarPrimaryStyle={styles.inputToolbarPrimary}
+        textInputStyle={styles.textInputStyle}
+        onHasTextChange={setHasInputText}
+        onTextChange={text => {
           inputTextRef.current = text;
-          if (!hasInputText && text.length > 0) {
-            setHasInputText(true);
-          }
-          if (hasInputText && text.length === 0) {
-            setHasInputText(false);
-          }
         }}
+        scrollToBottomOffset={50}
+        scrollToBottomStyle={scrollStyle.scrollToBottomContainerStyle}
+        contentContainerStyle={styles.contentContainer}
+        onScrollEvent={handleScroll}
+        onScrollBeginDrag={handleUserScroll}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onLayout={(layoutEvent: LayoutChangeEvent) => {
+          containerHeightRef.current = layoutEvent.nativeEvent.layout.height;
+        }}
+        onContentSizeChange={(_width: number, height: number) => {
+          contentHeightRef.current = height;
+        }}
+        onScrollToBottomPress={() => setUserScrolled(false)}
+        maintainVisibleContentPosition={
+          userScrolled &&
+          chatStatus === ChatStatus.Running &&
+          contentHeightRef.current > containerHeightRef.current
+            ? { minIndexForVisible: 0, autoscrollToTopThreshold: 0 }
+            : null
+        }
+        bottomOffset={
+          Platform.OS === 'android'
+            ? 0
+            : screenHeight > screenWidth && screenWidth < 500
+            ? 24 // iphone in portrait
+            : 12
+        }
       />
     </SafeAreaView>
   );
@@ -1275,14 +1430,11 @@ const createStyles = (colors: ColorScheme, isNovaSonic: boolean) =>
       paddingTop: 15,
       paddingBottom: 15,
       flexGrow: 1,
-      justifyContent: 'flex-end',
     },
     textInputStyle: {
       marginLeft: 10,
       lineHeight: 22,
-    },
-    composerTextInput: {
-      backgroundColor: 'transparent',
+      fontWeight: isMac ? '300' : 'normal',
       color: colors.text,
     },
     inputToolbarContainer: {

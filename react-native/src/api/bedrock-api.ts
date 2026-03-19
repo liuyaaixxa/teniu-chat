@@ -35,7 +35,7 @@ import { invokeOpenAIWithCallBack } from './open-api.ts';
 import { invokeOllamaWithCallBack } from './ollama-api.ts';
 import { BedrockThinkingModels } from '../storage/Constants.ts';
 import { getModelTag } from '../utils/ModelUtils.ts';
-import { invokeBedrockWithAPIKey, sleep } from './bedrock-api-key.ts';
+import { invokeBedrockWithAPIKey } from './bedrock-api-key.ts';
 import { genImageWithAPIKey } from './bedrock-api-key-image.ts';
 
 type CallbackFunction = (
@@ -169,7 +169,6 @@ export const invokeBedrockWithCallBack = async (
               // Split by SSE event boundaries
               const events = chunk.split('\n\n');
               for (const event of events) {
-                await sleep(0.1);
                 const bedrockChunk = parseChunk(event);
                 if (bedrockChunk) {
                   if (bedrockChunk.reasoning) {
@@ -185,7 +184,7 @@ export const invokeBedrockWithCallBack = async (
                   if (bedrockChunk.text) {
                     completeMessage += bedrockChunk.text ?? '';
                     appendTimes++;
-                    if (appendTimes > 5000 && appendTimes % 2 === 0) {
+                    if (appendTimes > 500 && appendTimes % 2 === 0) {
                       continue;
                     }
                     callback(

@@ -37,6 +37,7 @@ import CopyButton from './CopyButton';
 const CustomCodeHighlighter = lazy(() => import('./CustomCodeHighlighter'));
 let mathViewIndex = 0;
 
+
 function getMathKey() {
   mathViewIndex++;
   return 'math-' + mathViewIndex;
@@ -435,15 +436,15 @@ export class CustomMarkdownRenderer
           <TableWrapper style={headerTableStyle}>
             {header.map((headerCol, index) => {
               if (React.isValidElement(headerCol[0])) {
-                headerCol[0] = React.cloneElement(
-                  headerCol[0] as ReactElement<TextProps>,
-                  {
-                    style: {
-                      ...headerCol[0].props.style,
-                      fontWeight: '500',
-                    },
-                  }
-                );
+                const element = headerCol[0] as ReactElement<TextProps>;
+                const elementStyle =
+                  (element.props as { style?: object })?.style || {};
+                headerCol[0] = React.cloneElement(element, {
+                  style: {
+                    ...elementStyle,
+                    fontWeight: '500',
+                  },
+                });
               }
               return (
                 <Cell
@@ -488,6 +489,7 @@ export class CustomMarkdownRenderer
         counterRenderer={ordered ? Decimal : Disc}
         markerTextStyle={textStyle}
         markerBoxStyle={listStyle}
+        lineStyle={this.styles.listLine}
         enableMarkerClipping={true}
         key={this.getKey()}
         startIndex={startIndex}>
@@ -635,5 +637,8 @@ const createCustomStyles = (colors: ColorScheme) =>
     },
     inlineMathView: {
       color: colors.text,
+    },
+    listLine: {
+      alignItems: 'baseline',
     },
   });
