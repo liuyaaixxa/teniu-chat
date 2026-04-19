@@ -2,3 +2,6 @@
 #
 .DS_Store
 .idea
+
+# Local docs
+docs/
