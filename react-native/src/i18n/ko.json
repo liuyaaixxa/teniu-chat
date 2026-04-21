@@ -183,6 +183,16 @@
     "skip": "건너뛰기",
     "done": "완료"
   },
+  "promptNames": {
+    "translate": "번역",
+    "app": "앱",
+    "learnWords": "단어 학습",
+    "learnSentences": "문장 학습",
+    "story": "이야기",
+    "virtualTryOn": "가상 피팅",
+    "variations": "스타일 변형",
+    "removeBG": "배경 제거"
+  },
   "history": {
     "today": "오늘",
     "yesterday": "어제",

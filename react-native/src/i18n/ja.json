@@ -183,6 +183,16 @@
     "skip": "スキップ",
     "done": "完了"
   },
+  "promptNames": {
+    "translate": "翻訳",
+    "app": "アプリ",
+    "learnWords": "単語学習",
+    "learnSentences": "文法学習",
+    "story": "ストーリー",
+    "virtualTryOn": "バーチャル試着",
+    "variations": "バリエーション",
+    "removeBG": "背景除去"
+  },
   "history": {
     "today": "今日",
     "yesterday": "昨日",

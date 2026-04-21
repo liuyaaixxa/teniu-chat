@@ -183,6 +183,16 @@
     "skip": "Skip",
     "done": "Done"
   },
+  "promptNames": {
+    "translate": "Translate",
+    "app": "App",
+    "learnWords": "LearnWords",
+    "learnSentences": "LearnSentences",
+    "story": "Story",
+    "virtualTryOn": "Virtual try-on",
+    "variations": "Variations",
+    "removeBG": "RemoveBG"
+  },
   "history": {
     "today": "Today",
     "yesterday": "Yesterday",

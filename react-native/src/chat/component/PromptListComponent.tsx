@@ -34,6 +34,7 @@ import Dialog from 'react-native-dialog';
 import { requestToken } from '../../api/bedrock-api.ts';
 import { ColorScheme, useTheme } from '../../theme';
 import { useI18n } from '../../i18n/I18nProvider.tsx';
+import { promptNameKeys } from '../../i18n/promptNames.ts';
 
 interface PromptListProps {
   onSelectPrompt: (prompt: SystemPrompt | null) => void;
@@ -231,7 +232,7 @@ export const PromptListComponent: React.FC<PromptListProps> = ({
                 styles.promptText,
                 selectedPrompt?.id === item.id && styles.selectedPromptText,
               ]}>
-              {item.name}
+              {promptNameKeys[item.name] ? t(promptNameKeys[item.name]) : item.name}
             </Text>
           </Pressable>
           {isEditMode && prompts.length > 1 && (

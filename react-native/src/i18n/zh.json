@@ -183,6 +183,16 @@
     "skip": "跳过",
     "done": "完成"
   },
+  "promptNames": {
+    "translate": "翻译",
+    "app": "应用",
+    "learnWords": "学单词",
+    "learnSentences": "学句子",
+    "story": "故事",
+    "virtualTryOn": "虚拟试穿",
+    "variations": "风格变体",
+    "removeBG": "去除背景"
+  },
   "history": {
     "today": "今天",
     "yesterday": "昨天",

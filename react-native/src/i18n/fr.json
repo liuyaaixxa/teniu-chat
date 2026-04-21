@@ -183,6 +183,16 @@
     "skip": "Ignorer",
     "done": "Terminé"
   },
+  "promptNames": {
+    "translate": "Traduction",
+    "app": "Application",
+    "learnWords": "ApprendreMots",
+    "learnSentences": "ApprendrePhrases",
+    "story": "Histoire",
+    "virtualTryOn": "Essayage virtuel",
+    "variations": "Variations",
+    "removeBG": "SupprimerFond"
+  },
   "history": {
     "today": "Aujourd'hui",
     "yesterday": "Hier",

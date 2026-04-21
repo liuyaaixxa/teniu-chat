@@ -62,6 +62,8 @@ import {
 import { trigger } from './util/HapticUtils.ts';
 import { HapticFeedbackTypes } from 'react-native-haptic-feedback/src/types.ts';
 import { isMac } from '../App.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
+import { promptNameKeys } from '../i18n/promptNames.ts';
 import { CustomChatFooter } from './component/CustomChatFooter.tsx';
 import {
   checkFileNumberLimit,
@@ -147,6 +149,7 @@ let currentMode = ChatMode.Text;
 
 function ChatScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const navigation = useNavigation();
   const route = useRoute<ChatScreenRouteProp>();
   const initialSessionId = route.params?.sessionId;
@@ -298,12 +301,15 @@ function ChatScreen(): React.JSX.Element {
           title={
             mode === ChatMode.Text
               ? systemPrompt
-                ? systemPrompt.name
-                : 'Chat'
-              : 'Image'
+                ? promptNameKeys[systemPrompt.name]
+                  ? t(promptNameKeys[systemPrompt.name])
+                  : systemPrompt.name
+                : t('drawer.chat')
+              : t('drawer.image')
           }
           usage={usage}
           onDoubleTap={scrollToTop}
+          chatMode={mode}
         />
       ),
       // eslint-disable-next-line react/no-unstable-nested-components

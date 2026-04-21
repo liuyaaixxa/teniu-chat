@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { TapGestureHandler, State } from 'react-native-gesture-handler';
-import { Usage } from '../../types/Chat.ts';
+import { ChatMode, Usage } from '../../types/Chat.ts';
 import { useTheme, ColorScheme } from '../../theme';
 import { useI18n } from '../../i18n/I18nProvider.tsx';
 
@@ -9,12 +9,14 @@ interface HeaderTitleProps {
   title: string;
   usage?: Usage;
   onDoubleTap: () => void;
+  chatMode?: ChatMode;
 }
 
 const HeaderTitle: React.FC<HeaderTitleProps> = ({
   title,
   usage,
   onDoubleTap,
+  chatMode,
 }) => {
   const { colors } = useTheme();
   const { t } = useI18n();
@@ -45,7 +47,7 @@ const HeaderTitle: React.FC<HeaderTitleProps> = ({
         waitFor={doubleTapRef}>
         <View style={styles.container}>
           <Text style={styles.headerTitleStyle}>{title}</Text>
-          {showUsage && title !== 'Image' && (
+          {showUsage && chatMode !== ChatMode.Image && (
             <Text style={styles.usageText}>{`${t('chat.input')}: ${
               usage?.inputTokens ?? 0
             }   ${t('chat.output')}: ${usage?.outputTokens ?? 0}`}</Text>
