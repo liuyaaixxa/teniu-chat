@@ -19,9 +19,9 @@ sed -i "s/MARKETING_VERSION = ${regex};/MARKETING_VERSION = ${version};/g" ios/S
 sed -i "s/CURRENT_PROJECT_VERSION = ${version_code_regex};/CURRENT_PROJECT_VERSION = ${version_code};/g" ios/SwiftChat.xcodeproj/project.pbxproj
 
 # modify README download link
-sed -i "s/download\/${regex}\/SwiftChat.apk/download\/${version}\/SwiftChat.apk/g" ../README.md
-sed -i "s/download\/${regex}\/SwiftChat.dmg/download\/${version}\/SwiftChat.dmg/g" ../README.md
-sed -i "s/download\/${regex}\/SwiftChat.apk/download\/${version}\/SwiftChat.apk/g" ../README_CN.md
-sed -i "s/download\/${regex}\/SwiftChat.dmg/download\/${version}\/SwiftChat.dmg/g" ../README_CN.md
+sed -i "s/download\/${regex}\/TeniuChat.apk/download\/${version}\/TeniuChat.apk/g" ../README.md
+sed -i "s/download\/${regex}\/TeniuChat.dmg/download\/${version}\/TeniuChat.dmg/g" ../README.md
+sed -i "s/download\/${regex}\/TeniuChat.apk/download\/${version}\/TeniuChat.apk/g" ../README_CN.md
+sed -i "s/download\/${regex}\/TeniuChat.dmg/download\/${version}\/TeniuChat.dmg/g" ../README_CN.md
 
 

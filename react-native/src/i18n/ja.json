@@ -26,7 +26,7 @@
     "tabDeepSeek": "DeepSeek",
     "tabOpenAI": "OpenAI",
     "configModeApiKey": "Bedrock API Key",
-    "configModeServer": "SwiftChatサーバー",
+    "configModeServer": "TeniuChatサーバー",
     "apiUrl": "API URL",
     "enterApiUrl": "API URLを入力",
     "apiKey": "API Key",

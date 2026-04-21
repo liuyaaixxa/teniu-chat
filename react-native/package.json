@@ -1,6 +1,6 @@
 {
-  "name": "swift-chat",
-  "description": "Sample Bedrock Cross-platform App - SwiftChat",
+  "name": "teniuchat",
+  "description": "TeniuChat - Cross-platform AI Assistant App",
   "version": "2.8.0",
   "private": true,
   "scripts": {

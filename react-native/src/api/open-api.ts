@@ -60,7 +60,7 @@ export const invokeOpenAIWithCallBack = async (
   if (isOpenRouter) {
     options.headers['HTTP-Referer' as keyof typeof options.headers] =
       GITHUB_LINK;
-    options.headers['X-Title' as keyof typeof options.headers] = 'SwiftChat';
+    options.headers['X-Title' as keyof typeof options.headers] = 'TeniuChat';
   }
   const url = getApiURL();
   let completeMessage = '';

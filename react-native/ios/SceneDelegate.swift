@@ -24,7 +24,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // Use RCTAppDelegate's rootViewFactory to create the root view with New Architecture
       let rootView = appDelegate.rootViewFactory().view(
-            withModuleName: appDelegate.moduleName ?? "SwiftChat",
+            withModuleName: appDelegate.moduleName ?? "TeniuChat",
             initialProperties: appDelegate.initialProps as? [String: Any],
             launchOptions: nil
         )

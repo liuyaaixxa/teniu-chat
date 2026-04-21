@@ -112,7 +112,7 @@ export const invokeBedrockWithCallBack = async (
     }
     if (!isConfigured()) {
       callback(
-        'Please configure your SwiftChat Server API URL and API Key',
+        'Please configure your TeniuChat Server API URL and API Key',
         true,
         false
       );
@@ -352,7 +352,7 @@ export const requestAllModels = async (): Promise<AllModel> => {
     }));
     return allModel;
   } catch (error) {
-    console.log('SwiftChat Server Error fetching models:', error);
+    console.log('TeniuChat Server Error fetching models:', error);
     clearTimeout(timeoutId);
     return { imageModel: [], textModel: [] };
   }
