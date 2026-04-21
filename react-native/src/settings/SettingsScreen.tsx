@@ -59,6 +59,13 @@ import {
   getTavilyApiKey,
   saveTavilyApiKey,
   clearAllChatHistory,
+  getTeniuAiBaseUrl,
+  saveTeniuAiBaseUrl,
+  getTeniuAiApiKey,
+  saveTeniuAiApiKey,
+  getTeniuAiModelIds,
+  saveTeniuAiModelIds,
+  generateTeniuAiModels,
 } from '../storage/StorageUtils.ts';
 import { CustomHeaderRightButton } from '../chat/component/CustomHeaderRightButton.tsx';
 import { RouteParamList } from '../types/RouteTypes.ts';
@@ -136,13 +143,16 @@ function SettingsScreen(): React.JSX.Element {
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo>(initUpgradeInfo);
   const [cost, setCost] = useState('0.00');
   const controllerRef = useRef<AbortController | null>(null);
-  const [selectedTab, setSelectedTab] = useState('bedrock');
+  const [selectedTab, setSelectedTab] = useState('teniuai');
   const [thinkingEnabled, setThinkingEnabled] = useState(getThinkingEnabled);
   const [voiceId, setVoiceId] = useState(getVoiceId);
   const [bedrockConfigMode, setBedrockConfigMode] =
     useState(getBedrockConfigMode);
   const [bedrockApiKey, setBedrockApiKey] = useState(getBedrockApiKey);
   const [tavilyApiKey, setTavilyApiKey] = useState(getTavilyApiKey);
+  const [teniuAiBaseUrl, setTeniuAiBaseUrl] = useState(getTeniuAiBaseUrl);
+  const [teniuAiApiKey, setTeniuAiApiKey] = useState(getTeniuAiApiKey);
+  const [teniuAiModelIds, setTeniuAiModelIds] = useState(getTeniuAiModelIds);
   const { sendEvent } = useAppContext();
   const sendEventRef = useRef(sendEvent);
   const openAICompatConfigsRef = useRef(openAICompatConfigs);
@@ -220,6 +230,9 @@ function SettingsScreen(): React.JSX.Element {
         openAICompatConfigsRef.current
       );
 
+      // Generate TeniuAI models
+      const teniuAiModelList = generateTeniuAiModels();
+
       // Combine all text models
       const allTextModels =
         bedrockResponse.textModel.length === 0
@@ -228,12 +241,14 @@ function SettingsScreen(): React.JSX.Element {
               ...ollamaModels,
               ...getDefaultApiKeyModels(),
               ...openAICompatModelList,
+              ...teniuAiModelList,
             ]
           : [
               ...bedrockResponse.textModel,
               ...ollamaModels,
               ...getDefaultApiKeyModels(),
               ...openAICompatModelList,
+              ...teniuAiModelList,
             ];
 
       setTextModels(allTextModels);
@@ -362,6 +377,30 @@ function SettingsScreen(): React.JSX.Element {
     saveBedrockApiKey(bedrockApiKey.trim());
     fetchAndSetModelNamesRef.current(false, true).then();
   }, [bedrockApiKey]);
+
+  useEffect(() => {
+    if (teniuAiBaseUrl === getTeniuAiBaseUrl()) {
+      return;
+    }
+    saveTeniuAiBaseUrl(teniuAiBaseUrl.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [teniuAiBaseUrl]);
+
+  useEffect(() => {
+    if (teniuAiApiKey === getTeniuAiApiKey()) {
+      return;
+    }
+    saveTeniuAiApiKey(teniuAiApiKey.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [teniuAiApiKey]);
+
+  useEffect(() => {
+    if (teniuAiModelIds === getTeniuAiModelIds()) {
+      return;
+    }
+    saveTeniuAiModelIds(teniuAiModelIds.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [teniuAiModelIds]);
 
   const fetchUpgradeInfo = async () => {
     if (isMac || Platform.OS === 'android') {
@@ -499,105 +538,130 @@ function SettingsScreen(): React.JSX.Element {
 
   const renderProviderSettings = () => {
     switch (selectedTab) {
-      case 'bedrock':
-        return (
-          <>
-            <View style={styles.configSwitchContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.configSwitchButton,
-                  bedrockConfigMode === 'bedrock' &&
-                    styles.configSwitchButtonActive,
-                ]}
-                activeOpacity={0.7}
-                onPress={() => setBedrockConfigMode('bedrock')}>
-                <Text
-                  style={[
-                    styles.configSwitchText,
-                    bedrockConfigMode === 'bedrock' &&
-                      styles.configSwitchTextActive,
-                  ]}>
-                  {t('settings.configModeApiKey')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.configSwitchButton,
-                  bedrockConfigMode === 'swiftchat' &&
-                    styles.configSwitchButtonActive,
-                ]}
-                activeOpacity={0.7}
-                onPress={() => setBedrockConfigMode('swiftchat')}>
-                <Text
-                  style={[
-                    styles.configSwitchText,
-                    bedrockConfigMode === 'swiftchat' &&
-                      styles.configSwitchTextActive,
-                  ]}>
-                  {t('settings.configModeServer')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {bedrockConfigMode === 'bedrock' ? (
-              <>
-                <CustomTextInput
-                  label={t('settings.bedrockApiKey')}
-                  value={bedrockApiKey}
-                  onChangeText={setBedrockApiKey}
-                  placeholder={t('settings.enterBedrockApiKey')}
-                  secureTextEntry={true}
-                />
-              </>
-            ) : (
-              <>
-                <CustomTextInput
-                  label={t('settings.apiUrl')}
-                  value={apiUrl}
-                  onChangeText={setApiUrl}
-                  placeholder={t('settings.enterApiUrl')}
-                />
-                <CustomTextInput
-                  label={t('settings.apiKey')}
-                  value={apiKey}
-                  onChangeText={setApiKey}
-                  placeholder={t('settings.enterApiKey')}
-                  secureTextEntry={true}
-                />
-              </>
-            )}
-            <CustomDropdown
-              label={t('settings.region')}
-              data={regionsData}
-              value={region}
-              onChange={(item: DropdownItem) => {
-                if (item.value !== '' && item.value !== region) {
-                  setRegion(item.value);
-                  saveRegion(item.value);
-                  fetchAndSetModelNames(false, true).then();
-                }
-              }}
-              placeholder={t('settings.selectRegion')}
-            />
-          </>
-        );
-      case 'ollama':
+      case 'teniuai':
         return (
           <>
             <CustomTextInput
-              label={t('settings.ollamaApiUrl')}
-              value={ollamaApiUrl}
-              onChangeText={setOllamaApiUrl}
-              placeholder={t('settings.enterOllamaApiUrl')}
+              label={t('settings.teniuAiBaseUrl')}
+              value={teniuAiBaseUrl}
+              onChangeText={setTeniuAiBaseUrl}
+              placeholder={t('settings.enterTeniuAiBaseUrl')}
             />
             <CustomTextInput
-              label={t('settings.ollamaApiKey')}
-              value={ollamaApiKey}
-              onChangeText={setOllamaApiKey}
-              placeholder={t('settings.enterOllamaApiKey')}
+              label={t('settings.teniuAiApiKey')}
+              value={teniuAiApiKey}
+              onChangeText={setTeniuAiApiKey}
+              placeholder={t('settings.enterTeniuAiApiKey')}
               secureTextEntry={true}
             />
+            <CustomTextInput
+              label={t('settings.teniuAiModelIds')}
+              value={teniuAiModelIds}
+              onChangeText={setTeniuAiModelIds}
+              placeholder={t('settings.enterTeniuAiModelIds')}
+            />
           </>
         );
+      // Bedrock tab hidden — code preserved for future use
+      // case 'bedrock':
+      //   return (
+      //     <>
+      //       <View style={styles.configSwitchContainer}>
+      //         <TouchableOpacity
+      //           style={[
+      //             styles.configSwitchButton,
+      //             bedrockConfigMode === 'bedrock' &&
+      //               styles.configSwitchButtonActive,
+      //           ]}
+      //           activeOpacity={0.7}
+      //           onPress={() => setBedrockConfigMode('bedrock')}>
+      //           <Text
+      //             style={[
+      //               styles.configSwitchText,
+      //               bedrockConfigMode === 'bedrock' &&
+      //                 styles.configSwitchTextActive,
+      //             ]}>
+      //             {t('settings.configModeApiKey')}
+      //           </Text>
+      //         </TouchableOpacity>
+      //         <TouchableOpacity
+      //           style={[
+      //             styles.configSwitchButton,
+      //             bedrockConfigMode === 'swiftchat' &&
+      //               styles.configSwitchButtonActive,
+      //           ]}
+      //           activeOpacity={0.7}
+      //           onPress={() => setBedrockConfigMode('swiftchat')}>
+      //           <Text
+      //             style={[
+      //               styles.configSwitchText,
+      //               bedrockConfigMode === 'swiftchat' &&
+      //                 styles.configSwitchTextActive,
+      //             ]}>
+      //             {t('settings.configModeServer')}
+      //           </Text>
+      //         </TouchableOpacity>
+      //       </View>
+      //       {bedrockConfigMode === 'bedrock' ? (
+      //         <>
+      //           <CustomTextInput
+      //             label={t('settings.bedrockApiKey')}
+      //             value={bedrockApiKey}
+      //             onChangeText={setBedrockApiKey}
+      //             placeholder={t('settings.enterBedrockApiKey')}
+      //             secureTextEntry={true}
+      //           />
+      //         </>
+      //       ) : (
+      //         <>
+      //           <CustomTextInput
+      //             label={t('settings.apiUrl')}
+      //             value={apiUrl}
+      //             onChangeText={setApiUrl}
+      //             placeholder={t('settings.enterApiUrl')}
+      //           />
+      //           <CustomTextInput
+      //             label={t('settings.apiKey')}
+      //             value={apiKey}
+      //             onChangeText={setApiKey}
+      //             placeholder={t('settings.enterApiKey')}
+      //             secureTextEntry={true}
+      //           />
+      //         </>
+      //       )}
+      //       <CustomDropdown
+      //         label={t('settings.region')}
+      //         data={regionsData}
+      //         value={region}
+      //         onChange={(item: DropdownItem) => {
+      //           if (item.value !== '' && item.value !== region) {
+      //             setRegion(item.value);
+      //             saveRegion(item.value);
+      //             fetchAndSetModelNames(false, true).then();
+      //           }
+      //         }}
+      //         placeholder={t('settings.selectRegion')}
+      //       />
+      //     </>
+      //   );
+      // case 'ollama':
+      //   return (
+      //     <>
+      //       <CustomTextInput
+      //         label={t('settings.ollamaApiUrl')}
+      //         value={ollamaApiUrl}
+      //         onChangeText={setOllamaApiUrl}
+      //         placeholder={t('settings.enterOllamaApiUrl')}
+      //       />
+      //       <CustomTextInput
+      //         label={t('settings.ollamaApiKey')}
+      //         value={ollamaApiKey}
+      //         onChangeText={setOllamaApiKey}
+      //         placeholder={t('settings.enterOllamaApiKey')}
+      //         secureTextEntry={true}
+      //       />
+      //     </>
+      //   );
       case 'deepseek':
         return (
           <CustomTextInput
@@ -650,6 +714,12 @@ function SettingsScreen(): React.JSX.Element {
           <View style={styles.providerSettingsWrapper}>
             <View style={styles.tabContainer}>
               <TabButton
+                label="TeniuAI"
+                isSelected={selectedTab === 'teniuai'}
+                onPress={() => setSelectedTab('teniuai')}
+              />
+              {/* Bedrock tab hidden — code preserved for future use
+              <TabButton
                 label={isMac ? 'Amazon Bedrock' : 'Bedrock'}
                 isSelected={selectedTab === 'bedrock'}
                 onPress={() => setSelectedTab('bedrock')}
@@ -659,6 +729,7 @@ function SettingsScreen(): React.JSX.Element {
                 isSelected={selectedTab === 'ollama'}
                 onPress={() => setSelectedTab('ollama')}
               />
+              */}
               <TabButton
                 label="DeepSeek"
                 isSelected={selectedTab === 'deepseek'}

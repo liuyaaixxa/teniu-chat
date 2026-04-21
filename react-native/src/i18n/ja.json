@@ -83,7 +83,13 @@
     "enterModelIds": "モデルIDをカンマ区切りで入力",
     "deleteOpenAiCompatTitle": "設定を削除",
     "deleteOpenAiCompatDesc": "このOpenAI互換設定を削除しますか？",
-    "maxOpenAiCompat": "OpenAI互換設定は最大10個まで追加できます。"
+    "maxOpenAiCompat": "OpenAI互換設定は最大10個まで追加できます。",
+    "teniuAiBaseUrl": "Base URL",
+    "enterTeniuAiBaseUrl": "Base URLを入力",
+    "teniuAiApiKey": "API Key",
+    "enterTeniuAiApiKey": "API Keyを入力",
+    "teniuAiModelIds": "モデルID",
+    "enterTeniuAiModelIds": "モデルIDをカンマ区切りで入力"
   },
   "chat": {
     "message": "メッセージ",

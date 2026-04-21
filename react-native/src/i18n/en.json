@@ -83,7 +83,13 @@
     "enterModelIds": "Enter Model IDs, split by comma",
     "deleteOpenAiCompatTitle": "Delete Configuration",
     "deleteOpenAiCompatDesc": "Are you sure you want to delete this OpenAI Compatible configuration?",
-    "maxOpenAiCompat": "A maximum of 10 OpenAI Compatible items can be added."
+    "maxOpenAiCompat": "A maximum of 10 OpenAI Compatible items can be added.",
+    "teniuAiBaseUrl": "Base URL",
+    "enterTeniuAiBaseUrl": "Enter Base URL",
+    "teniuAiApiKey": "API Key",
+    "enterTeniuAiApiKey": "Enter API Key",
+    "teniuAiModelIds": "Model IDs",
+    "enterTeniuAiModelIds": "Enter Model IDs, split by comma"
   },
   "chat": {
     "message": "Message",

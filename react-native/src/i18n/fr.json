@@ -83,7 +83,13 @@
     "enterModelIds": "Entrer les IDs de modèle, séparés par des virgules",
     "deleteOpenAiCompatTitle": "Supprimer la configuration",
     "deleteOpenAiCompatDesc": "Êtes-vous sûr de vouloir supprimer cette configuration OpenAI compatible ?",
-    "maxOpenAiCompat": "Un maximum de 10 configurations OpenAI compatibles peuvent être ajoutées."
+    "maxOpenAiCompat": "Un maximum de 10 configurations OpenAI compatibles peuvent être ajoutées.",
+    "teniuAiBaseUrl": "Base URL",
+    "enterTeniuAiBaseUrl": "Entrer l'URL de base",
+    "teniuAiApiKey": "API Key",
+    "enterTeniuAiApiKey": "Entrer la clé API",
+    "teniuAiModelIds": "ID du modèle",
+    "enterTeniuAiModelIds": "Entrer les IDs de modèle, séparés par des virgules"
   },
   "chat": {
     "message": "Message",

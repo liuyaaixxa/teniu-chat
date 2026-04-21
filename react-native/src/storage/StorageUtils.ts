@@ -81,6 +81,9 @@ const searchProviderKey = keyPrefix + 'searchProviderKey';
 const tavilyApiKeyTag = keyPrefix + 'tavilyApiKeyTag';
 const savedAppsKey = keyPrefix + 'savedAppsKey';
 const googleLoginDoneKey = keyPrefix + 'googleLoginDoneKey';
+const teniuAiBaseUrlKey = keyPrefix + 'teniuAiBaseUrlKey';
+const teniuAiApiKeyTag = keyPrefix + 'teniuAiApiKeyTag';
+const teniuAiModelIdsKey = keyPrefix + 'teniuAiModelIdsKey';
 
 let currentApiUrl: string | undefined;
 let currentApiKey: string | undefined;
@@ -995,4 +998,57 @@ export function generateOpenAICompatModels(
   });
 
   return openAICompatModelList;
+}
+
+// TeniuAI
+export function getTeniuAiBaseUrl(): string {
+  return storage.getString(teniuAiBaseUrlKey) ?? '';
+}
+
+export function saveTeniuAiBaseUrl(url: string) {
+  storage.set(teniuAiBaseUrlKey, url);
+}
+
+export function getTeniuAiApiKey(): string {
+  return encryptStorage.getString(teniuAiApiKeyTag) ?? '';
+}
+
+export function saveTeniuAiApiKey(key: string) {
+  encryptStorage.set(teniuAiApiKeyTag, key);
+}
+
+export function getTeniuAiModelIds(): string {
+  return storage.getString(teniuAiModelIdsKey) ?? '';
+}
+
+export function saveTeniuAiModelIds(ids: string) {
+  storage.set(teniuAiModelIdsKey, ids);
+}
+
+export function generateTeniuAiModels(): Model[] {
+  const baseUrl = getTeniuAiBaseUrl();
+  const apiKey = getTeniuAiApiKey();
+  const modelIds = getTeniuAiModelIds();
+  if (!baseUrl || !modelIds) {
+    return [];
+  }
+  const domain = extractDomainFromUrl(baseUrl);
+  const prefix = domain ? `${domain}/` : '';
+  return modelIds
+    .split(',')
+    .map(id => id.trim().replace(/(\r\n|\n|\r)/gm, ''))
+    .filter(id => id.length > 0)
+    .map(modelId => {
+      const parts = modelId.split('/');
+      const displayName =
+        prefix + (parts.length === 2 ? parts[1] : modelId).trim();
+      return {
+        modelId,
+        modelName: displayName,
+        modelTag: ModelTag.OpenAICompatible,
+        uniqueId: 'teniuai',
+        apiKey,
+        apiUrl: baseUrl,
+      } as Model;
+    });
 }

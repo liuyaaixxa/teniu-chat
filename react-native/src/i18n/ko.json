@@ -83,7 +83,13 @@
     "enterModelIds": "모델 ID를 쉼표로 구분하여 입력",
     "deleteOpenAiCompatTitle": "설정 삭제",
     "deleteOpenAiCompatDesc": "이 OpenAI 호환 설정을 삭제하시겠습니까?",
-    "maxOpenAiCompat": "OpenAI 호환 설정은 최대 10개까지 추가할 수 있습니다."
+    "maxOpenAiCompat": "OpenAI 호환 설정은 최대 10개까지 추가할 수 있습니다.",
+    "teniuAiBaseUrl": "Base URL",
+    "enterTeniuAiBaseUrl": "Base URL 입력",
+    "teniuAiApiKey": "API Key",
+    "enterTeniuAiApiKey": "API Key 입력",
+    "teniuAiModelIds": "모델 ID",
+    "enterTeniuAiModelIds": "모델 ID를 쉼표로 구분하여 입력"
   },
   "chat": {
     "message": "메시지",

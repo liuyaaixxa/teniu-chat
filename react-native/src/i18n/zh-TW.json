@@ -83,7 +83,13 @@
     "enterModelIds": "輸入模型 ID，以逗號分隔",
     "deleteOpenAiCompatTitle": "刪除設定",
     "deleteOpenAiCompatDesc": "確定要刪除此 OpenAI 相容設定嗎？",
-    "maxOpenAiCompat": "最多可新增 10 個 OpenAI 相容設定。"
+    "maxOpenAiCompat": "最多可新增 10 個 OpenAI 相容設定。",
+    "teniuAiBaseUrl": "Base URL",
+    "enterTeniuAiBaseUrl": "輸入 Base URL",
+    "teniuAiApiKey": "API Key",
+    "enterTeniuAiApiKey": "輸入 API Key",
+    "teniuAiModelIds": "模型 ID",
+    "enterTeniuAiModelIds": "輸入模型 ID，以逗號分隔"
   },
   "chat": {
     "message": "訊息",
