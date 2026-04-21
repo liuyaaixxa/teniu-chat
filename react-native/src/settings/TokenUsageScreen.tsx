@@ -26,11 +26,13 @@ import {
 } from './ModelPrice.ts';
 import { HeaderLeftView } from '../prompt/HeaderLeftView.tsx';
 import { useTheme, ColorScheme } from '../theme';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 type NavigationProp = DrawerNavigationProp<RouteParamList>;
 
 function TokenUsageScreen(): React.JSX.Element {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useI18n();
   const [modelUsage, setModelUsage] = React.useState<Usage[]>([]);
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -133,7 +135,7 @@ function TokenUsageScreen(): React.JSX.Element {
                   <>
                     <View style={styles.tokenInfo}>
                       <Text style={styles.tokenText}>
-                        Input: {usage.inputTokens.toLocaleString()}
+                        {t('tokenUsage.input')}: {usage.inputTokens.toLocaleString()}
                       </Text>
                       <Text style={styles.tokenText}>
                         {usagePrice.inputPrice < 0
@@ -143,7 +145,7 @@ function TokenUsageScreen(): React.JSX.Element {
                     </View>
                     <View style={styles.tokenInfo}>
                       <Text style={styles.tokenText}>
-                        Output: {usage.outputTokens.toLocaleString()}
+                        {t('tokenUsage.output')}: {usage.outputTokens.toLocaleString()}
                       </Text>
                       <Text style={styles.tokenText}>
                         {usagePrice.outputPrice < 0
@@ -158,14 +160,14 @@ function TokenUsageScreen(): React.JSX.Element {
           })}
         <View style={styles.totalContainer}>
           <View style={styles.totalHeader}>
-            <Text style={styles.totalLabel}>Total Usage</Text>
+            <Text style={styles.totalLabel}>{t('tokenUsage.totalUsage')}</Text>
             <Text style={styles.totalPrice}>
               USD {getTotalCost(modelUsage).toString()}
             </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalText}>
-              Input Tokens: {getTotalInputTokens(modelUsage).toLocaleString()}
+              {t('tokenUsage.inputTokens')}: {getTotalInputTokens(modelUsage).toLocaleString()}
             </Text>
             <Text style={styles.totalText}>
               USD {getTotalInputPrice(modelUsage).toString()}
@@ -173,7 +175,7 @@ function TokenUsageScreen(): React.JSX.Element {
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalText}>
-              Output Tokens: {getTotalOutputTokens(modelUsage).toLocaleString()}
+              {t('tokenUsage.outputTokens')}: {getTotalOutputTokens(modelUsage).toLocaleString()}
             </Text>
             <Text style={styles.totalText}>
               USD {getTotalOutputPrice(modelUsage).toString()}
@@ -181,7 +183,7 @@ function TokenUsageScreen(): React.JSX.Element {
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalText}>
-              Images: {getTotalImageCount(modelUsage).toLocaleString()}
+              {t('tokenUsage.images')}: {getTotalImageCount(modelUsage).toLocaleString()}
             </Text>
             <Text style={styles.totalText}>
               USD {getTotalImagePrice(modelUsage).toString()}
@@ -193,8 +195,7 @@ function TokenUsageScreen(): React.JSX.Element {
           onPress={() =>
             Linking.openURL('https://aws.amazon.com/bedrock/pricing/')
           }>
-          * Amazon Bedrock model pricing is estimated based on US region rates.
-          Actual costs may vary by region. For accurate pricing, please refer to{' '}
+          {t('tokenUsage.bedrockPricingNote')}{' '}
           <Text style={[styles.firstPriceLink, styles.underline]}>
             Amazon Bedrock Pricing
           </Text>
@@ -204,7 +205,7 @@ function TokenUsageScreen(): React.JSX.Element {
           onPress={() =>
             Linking.openURL('https://api-docs.deepseek.com/quick_start/pricing')
           }>
-          * For DeepSeek models, please refer to{' '}
+          {t('tokenUsage.deepSeekPricingNote')}{' '}
           <Text style={[styles.priceLink, styles.underline]}>
             DeepSeek API Pricing
           </Text>
@@ -212,14 +213,13 @@ function TokenUsageScreen(): React.JSX.Element {
         <Text
           style={styles.priceLink}
           onPress={() => Linking.openURL('https://openai.com/api/pricing/')}>
-          * For OpenAI models, please refer to{' '}
+          {t('tokenUsage.openAiPricingNote')}{' '}
           <Text style={[styles.priceLink, styles.underline]}>
             OpenAI API Pricing
           </Text>
         </Text>
         <Text style={styles.priceLink}>
-          * Currently, usage price calculation is not supported for Ollama and
-          OpenAI Compatible models.
+          {t('tokenUsage.ollamaPricingNote')}
         </Text>
       </ScrollView>
     </SafeAreaView>

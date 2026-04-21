@@ -20,6 +20,7 @@ import Animated, {
 import Dialog from 'react-native-dialog';
 import { useTheme, ColorScheme } from '../../theme';
 import { getSearchProviderIcon } from '../../utils/SearchIconUtils';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 import {
   getSearchProvider,
   saveSearchProvider,
@@ -55,6 +56,7 @@ export const WebSearchSelectionModal: React.FC<
 }) => {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors);
+  const { t } = useI18n();
   const { sendEvent } = useAppContext();
   const navigation = useNavigation<NavigationProp<RouteParamList>>();
   const [selectedProvider, setSelectedProvider] = useState<SearchEngineOption>(
@@ -222,7 +224,7 @@ export const WebSearchSelectionModal: React.FC<
                 },
               ]}>
               <View style={styles.header}>
-                <Text style={styles.title}>Web Search</Text>
+                <Text style={styles.title}>{t('webSearch.title')}</Text>
                 <TouchableOpacity
                   onPress={handleClose}
                   hitSlop={8}
@@ -246,16 +248,15 @@ export const WebSearchSelectionModal: React.FC<
         onDone={handleGoogleLoginDone}
       />
       <Dialog.Container visible={showApiKeyDialog}>
-        <Dialog.Title>Tavily API Key Required</Dialog.Title>
+        <Dialog.Title>{t('webSearch.tavilyApiKeyRequired')}</Dialog.Title>
         <Dialog.Description>
-          Please configure your Tavily API key in Settings before using Tavily
-          search.
+          {t('webSearch.tavilyApiKeyDescription')}
         </Dialog.Description>
         <Dialog.Button
-          label="Cancel"
+          label={t('common.cancel')}
           onPress={() => setShowApiKeyDialog(false)}
         />
-        <Dialog.Button label="Go to Settings" onPress={handleGoToSettings} />
+        <Dialog.Button label={t('webSearch.goToSettings')} onPress={handleGoToSettings} />
       </Dialog.Container>
     </Modal>
   );

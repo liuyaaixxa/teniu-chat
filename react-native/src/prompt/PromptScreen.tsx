@@ -19,6 +19,7 @@ import { getPromptId, getTextModel } from '../storage/StorageUtils.ts';
 import { HeaderLeftView } from './HeaderLeftView.tsx';
 import { isMac } from '../App.tsx';
 import { useTheme, ColorScheme } from '../theme';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 type NavigationProp = DrawerNavigationProp<RouteParamList>;
 type PromptScreenRouteProp = RouteProp<RouteParamList, 'Prompt'>;
@@ -27,6 +28,7 @@ const MAX_NAME_LENGTH = 20;
 function PromptScreen(): React.JSX.Element {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PromptScreenRouteProp>();
+  const { t } = useI18n();
   const isNovaSonic = getTextModel().modelId.includes('sonic');
   const isAddMode = route.params.prompt === undefined;
   const promptType = route.params.promptType;
@@ -59,15 +61,15 @@ function PromptScreen(): React.JSX.Element {
 
   const handleSave = () => {
     if (currentPrompt.name.trim().length === 0) {
-      showInfo('Please enter prompt name');
+      showInfo(t('prompt.enterPromptName'));
       return;
     }
     if (calculateTextLength(currentPrompt.name) > MAX_NAME_LENGTH) {
-      showInfo(`Please keep your text under ${MAX_NAME_LENGTH} characters`);
+      showInfo(t('prompt.textTooLong', { max: MAX_NAME_LENGTH }));
       return;
     }
     if (currentPrompt.prompt.trim().length === 0) {
-      showInfo('Please enter system prompt');
+      showInfo(t('prompt.enterSystemPrompt'));
       return;
     }
     sendEvent(isAddMode ? 'onPromptAdd' : 'onPromptUpdate', {
@@ -83,7 +85,7 @@ function PromptScreen(): React.JSX.Element {
         automaticallyAdjustKeyboardInsets={true}>
         <TextInput
           style={[styles.input, isMac && styles.macInput]}
-          placeholder="Prompt name"
+          placeholder={t('prompt.promptName')}
           placeholderTextColor={colors.placeholder}
           value={currentPrompt.name}
           onChangeText={text => {
@@ -92,7 +94,7 @@ function PromptScreen(): React.JSX.Element {
         />
         <TextInput
           style={[styles.input, styles.contentInput, isMac && styles.macInput]}
-          placeholder="Systrem prompt"
+          placeholder={t('prompt.systemPrompt')}
           placeholderTextColor={colors.placeholder}
           value={currentPrompt.prompt}
           multiline
@@ -103,7 +105,7 @@ function PromptScreen(): React.JSX.Element {
         {promptType !== 'image' && (
           <View style={styles.switchContainer}>
             <Text style={styles.label}>
-              {isNovaSonic ? 'Allow Interruption' : 'Include Chat History'}
+              {isNovaSonic ? t('prompt.allowInterruption') : t('prompt.includeChatHistory')}
             </Text>
             <Switch
               style={[isMac ? styles.switch : {}]}
@@ -128,7 +130,7 @@ function PromptScreen(): React.JSX.Element {
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>
-            {isAddMode ? 'Create' : 'Update'}
+            {isAddMode ? t('prompt.create') : t('prompt.update')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

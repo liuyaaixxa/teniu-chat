@@ -33,6 +33,7 @@ import { useAppContext } from '../../history/AppProvider.tsx';
 import Dialog from 'react-native-dialog';
 import { requestToken } from '../../api/bedrock-api.ts';
 import { ColorScheme, useTheme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 interface PromptListProps {
   onSelectPrompt: (prompt: SystemPrompt | null) => void;
@@ -48,6 +49,7 @@ export const PromptListComponent: React.FC<PromptListProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors);
+  const { t } = useI18n();
   const navigation = useNavigation<NavigationProp>();
   const isImageMode = chatMode === ChatMode.Image;
   const [isNovaSonic, setIsNovaSonic] = useState(
@@ -291,23 +293,23 @@ export const PromptListComponent: React.FC<PromptListProps> = ({
       )}
       <Dialog.Container visible={showDialog}>
         <Dialog.Title>
-          {deletePromptIdRef.current === -7 ? 'Cannot Delete' : 'Delete Prompt'}
+          {deletePromptIdRef.current === -7 ? t('prompt.cannotDelete') : t('prompt.deletePrompt')}
         </Dialog.Title>
         <Dialog.Description>
           {deletePromptIdRef.current === -7
-            ? 'Virtual try on can not be deleted'
-            : 'You cannot undo this action.'}
+            ? t('prompt.cannotDeleteDefault')
+            : t('drawer.deleteDescription')}
         </Dialog.Description>
         {deletePromptIdRef.current !== -7 && (
           <Dialog.Button
-            label="Cancel"
+            label={t('common.cancel')}
             onPress={() => {
               setShowDialog(false);
             }}
           />
         )}
         <Dialog.Button
-          label={deletePromptIdRef.current === -7 ? 'OK' : 'Delete'}
+          label={deletePromptIdRef.current === -7 ? t('common.ok') : t('common.delete')}
           onPress={() => {
             if (deletePromptIdRef.current !== -7) {
               handleDelete();

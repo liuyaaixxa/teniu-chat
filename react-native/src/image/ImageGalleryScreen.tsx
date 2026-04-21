@@ -27,6 +27,7 @@ import { showInfo } from '../chat/util/ToastUtils';
 import { isMacCatalyst } from '../utils/PlatformUtils';
 import FileViewer from 'react-native-file-viewer';
 import { CustomHeaderRightButton } from '../chat/component/CustomHeaderRightButton';
+import { useI18n } from '../i18n/I18nProvider';
 
 type NavigationProp = NativeStackNavigationProp<RouteParamList>;
 
@@ -42,6 +43,7 @@ const getNumColumns = (width: number) => (width > 434 ? 5 : 3);
 function ImageGalleryScreen(): React.JSX.Element {
   const navigation = useNavigation<NavigationProp>();
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const [images, setImages] = useState<ImageItem[]>([]);
   const [screenWidth, setScreenWidth] = useState(
     Dimensions.get('window').width
@@ -118,19 +120,19 @@ function ImageGalleryScreen(): React.JSX.Element {
           }
         />
       ),
-      title: 'Image Gallery',
+      title: t('imageGallery.title'),
     });
-  }, [navigation, isDark]);
+  }, [navigation, isDark, t]);
 
   const handleDeleteImage = useCallback(
     (image: ImageItem) => {
       Alert.alert(
-        'Delete Image',
-        'Are you sure you want to delete this image?',
+        t('imageGallery.deleteImage'),
+        t('imageGallery.deleteImageConfirm'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: async () => {
               try {
@@ -151,7 +153,7 @@ function ImageGalleryScreen(): React.JSX.Element {
         ]
       );
     },
-    [loadImages]
+    [loadImages, t]
   );
 
   const handleSaveOrShare = useCallback(async (image: ImageItem) => {
@@ -170,8 +172,8 @@ function ImageGalleryScreen(): React.JSX.Element {
         const destPath = `${downloadsPath}/${image.name}`;
         await RNFS.copyFile(filePath, destPath);
         Alert.alert(
-          'Success',
-          `Image saved to Downloads folder:\n${image.name}`
+          t('common.success'),
+          t('imageGallery.savedToDownloads', { name: image.name })
         );
       } else {
         // On mobile, use share sheet
@@ -181,7 +183,7 @@ function ImageGalleryScreen(): React.JSX.Element {
         const shareOptions = {
           url: filePath,
           type: 'image/png',
-          title: 'Save Image',
+          title: t('imageGallery.saveImage'),
         };
         await Share.open(shareOptions);
       }
@@ -189,10 +191,10 @@ function ImageGalleryScreen(): React.JSX.Element {
       console.log('Error saving/sharing image:', error);
       // User cancelled share is not an error
       if ((error as Error).message !== 'User did not share') {
-        showInfo('Action cancelled');
+        showInfo(t('imageGallery.actionCancelled'));
       }
     }
-  }, []);
+  }, [t]);
 
   const handleOpenImage = useCallback((image: ImageItem, index: number) => {
     if (isMacCatalyst) {
@@ -231,13 +233,13 @@ function ImageGalleryScreen(): React.JSX.Element {
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No generated images yet</Text>
+        <Text style={styles.emptyText}>{t('imageGallery.noImages')}</Text>
         <Text style={styles.emptySubtext}>
-          Generate images in chat and they will appear here
+          {t('imageGallery.noImagesSubtext')}
         </Text>
       </View>
     ),
-    [styles]
+    [styles, t]
   );
 
   const HeaderComponent = useCallback(

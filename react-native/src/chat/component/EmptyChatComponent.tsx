@@ -14,6 +14,7 @@ import { RouteParamList } from '../../types/RouteTypes.ts';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { getImageModel, getTextModel } from '../../storage/StorageUtils.ts';
 import { useTheme, ColorScheme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 const isAndroid = Platform.OS === 'android';
 type NavigationProp = DrawerNavigationProp<RouteParamList>;
@@ -28,6 +29,7 @@ export const EmptyChatComponent = ({
   isLoadingMessages = false,
 }: EmptyChatComponentProps): React.ReactElement => {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const navigation = useNavigation<NavigationProp>();
   const { event } = useAppContext();
   const [currentTextModel, setCurrentTextModel] = useState(getTextModel());
@@ -60,7 +62,7 @@ export const EmptyChatComponent = ({
             source={require('../../assets/loading.png')}
           />
         ) : (
-          <Text style={styles.greetingText}>Hi, I'm {modelName}</Text>
+          <Text style={styles.greetingText}>{t('chat.hiIm', { model: modelName })}</Text>
         )}
       </TouchableOpacity>
     </View>

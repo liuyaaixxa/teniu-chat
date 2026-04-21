@@ -1,4 +1,5 @@
 import { Chat } from '../types/Chat.ts';
+import i18next from 'i18next';
 
 export function groupMessagesByDate(messages: Chat[]) {
   const groupChat: Chat[] = [];
@@ -21,27 +22,27 @@ export function groupMessagesByDate(messages: Chat[]) {
   messages.forEach(message => {
     let groupTitle = '';
     if (message.timestamp >= todayTimestamp) {
-      groupTitle = 'Today';
+      groupTitle = i18next.t('history.today');
     } else if (message.timestamp >= yesterday) {
-      groupTitle = 'Yesterday';
+      groupTitle = i18next.t('history.yesterday');
     } else if (message.timestamp >= ago2days) {
-      groupTitle = '2 days ago';
+      groupTitle = i18next.t('history.daysAgo', { count: 2 });
     } else if (message.timestamp >= ago3days) {
-      groupTitle = '3 days ago';
+      groupTitle = i18next.t('history.daysAgo', { count: 3 });
     } else if (message.timestamp >= ago4days) {
-      groupTitle = '4 days ago';
+      groupTitle = i18next.t('history.daysAgo', { count: 4 });
     } else if (message.timestamp >= ago5days) {
-      groupTitle = '5 days ago';
+      groupTitle = i18next.t('history.daysAgo', { count: 5 });
     } else if (message.timestamp >= ago6days) {
-      groupTitle = '6 days ago';
+      groupTitle = i18next.t('history.daysAgo', { count: 6 });
     } else if (message.timestamp >= lastWeek) {
-      groupTitle = 'Last week';
+      groupTitle = i18next.t('history.lastWeek');
     } else if (message.timestamp >= ago2week) {
-      groupTitle = '2 weeks ago';
+      groupTitle = i18next.t('history.weeksAgo', { count: 2 });
     } else if (message.timestamp >= ago3week) {
-      groupTitle = '3 weeks ago';
+      groupTitle = i18next.t('history.weeksAgo', { count: 3 });
     } else if (message.timestamp >= ago4week) {
-      groupTitle = '4 weeks ago';
+      groupTitle = i18next.t('history.weeksAgo', { count: 4 });
     } else {
       if (
         currentMonthTimestamp !== 0 &&

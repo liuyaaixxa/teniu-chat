@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { TapGestureHandler, State } from 'react-native-gesture-handler';
 import { Usage } from '../../types/Chat.ts';
 import { useTheme, ColorScheme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 interface HeaderTitleProps {
   title: string;
@@ -16,6 +17,7 @@ const HeaderTitle: React.FC<HeaderTitleProps> = ({
   onDoubleTap,
 }) => {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const styles = createStyles(colors);
   const [showUsage, setShowUsage] = useState(false);
   const doubleTapRef = useRef(null);
@@ -44,9 +46,9 @@ const HeaderTitle: React.FC<HeaderTitleProps> = ({
         <View style={styles.container}>
           <Text style={styles.headerTitleStyle}>{title}</Text>
           {showUsage && title !== 'Image' && (
-            <Text style={styles.usageText}>{`Input: ${
+            <Text style={styles.usageText}>{`${t('chat.input')}: ${
               usage?.inputTokens ?? 0
-            }   Output: ${usage?.outputTokens ?? 0}`}</Text>
+            }   ${t('chat.output')}: ${usage?.outputTokens ?? 0}`}</Text>
           )}
         </View>
       </TapGestureHandler>

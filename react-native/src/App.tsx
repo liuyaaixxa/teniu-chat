@@ -23,6 +23,7 @@ import { isAndroid, isMacCatalyst } from './utils/PlatformUtils';
 import { ThemeProvider, useTheme } from './theme';
 import { configureErrorHandling } from './utils/ErrorUtils';
 import { migrateOpenAICompatConfig } from './storage/StorageUtils.ts';
+import { I18nProvider, useI18n } from './i18n/I18nProvider.tsx';
 import { SearchWebView } from './websearch/components/SearchWebView';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
@@ -72,6 +73,7 @@ const DrawerNavigator = () => {
 };
 const AppNavigator = () => {
   const { colors } = useTheme();
+  const { t } = useI18n();
   return (
     <Stack.Navigator initialRouteName="Drawer" screenOptions={{}}>
       <Stack.Screen
@@ -83,7 +85,7 @@ const AppNavigator = () => {
         name="TokenUsage"
         component={TokenUsageScreen}
         options={{
-          title: 'Usage',
+          title: t('tokenUsage.title'),
           contentStyle: {
             height: isMac ? 66 : undefined,
             backgroundColor: colors.background,
@@ -97,7 +99,7 @@ const AppNavigator = () => {
         name="Prompt"
         component={PromptScreen}
         options={{
-          title: 'System Prompt',
+          title: t('prompt.title'),
           contentStyle: {
             height: isMac ? 66 : undefined,
             backgroundColor: colors.background,
@@ -128,7 +130,7 @@ const AppNavigator = () => {
         name="CreateApp"
         component={CreateAppScreen}
         options={{
-          title: 'Create App',
+          title: t('createApp.title'),
           contentStyle: {
             height: isMac ? 66 : undefined,
             backgroundColor: colors.background,
@@ -172,11 +174,13 @@ const App = () => {
 
   // On Mac, we don't need KeyboardProvider
   const content = (
-    <ThemeProvider>
-      <AppProvider>
-        <AppWithTheme />
-      </AppProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <AppProvider>
+          <AppWithTheme />
+        </AppProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 
   return (

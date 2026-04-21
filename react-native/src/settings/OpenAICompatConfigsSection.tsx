@@ -10,6 +10,7 @@ import OpenAICompatConfigComponent from './OpenAICompatConfigComponent.tsx';
 import { v4 as uuidv4 } from 'uuid';
 import Dialog from 'react-native-dialog';
 import { showInfo } from '../chat/util/ToastUtils.ts';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 interface OpenAICompatConfigsSectionProps {
   isDark: boolean;
@@ -22,6 +23,7 @@ export default function OpenAICompatConfigsSection({
 }: OpenAICompatConfigsSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { t } = useI18n();
   const [configs, setConfigs] = useState<OpenAICompatConfig[]>([]);
   const onConfigsChangeRef = useRef(onConfigsChange);
   const [showDialog, setShowDialog] = useState<boolean>(false);
@@ -70,7 +72,7 @@ export default function OpenAICompatConfigsSection({
       saveOpenAICompatConfigs(updatedConfigs);
       onConfigsChangeRef.current(updatedConfigs);
     } else {
-      showInfo('A maximum of 10 OpenAI Compatible items can be added.');
+      showInfo(t('settings.maxOpenAiCompat'));
     }
   };
 
@@ -95,13 +97,11 @@ export default function OpenAICompatConfigsSection({
     saveOpenAICompatConfigs(updatedConfigs);
     onConfigsChangeRef.current(updatedConfigs);
   };
-  const columnIndex =
-    configs.findIndex(config => config.id === deleteIdRef.current) + 1;
 
   return (
     <View style={styles.openAICompatSection}>
       <View style={styles.openAICompatHeader}>
-        <Text style={styles.label}>OpenAI Compatible</Text>
+        <Text style={styles.label}>{t('settings.openAiCompatible')}</Text>
         <TouchableOpacity
           onPress={addOpenAICompatConfig}
           style={styles.addButton}>
@@ -131,17 +131,17 @@ export default function OpenAICompatConfigsSection({
       ))}
       <Dialog.Container visible={showDialog}>
         <Dialog.Title>
-          Delete {'\n'}OpenAI Compatible {columnIndex}
+          {t('settings.deleteOpenAiCompatTitle')}
         </Dialog.Title>
-        <Dialog.Description>You cannot undo this action.</Dialog.Description>
+        <Dialog.Description>{t('settings.deleteOpenAiCompatDesc')}</Dialog.Description>
         <Dialog.Button
-          label="Cancel"
+          label={t('common.cancel')}
           onPress={() => {
             setShowDialog(false);
           }}
         />
         <Dialog.Button
-          label="Delete"
+          label={t('common.delete')}
           onPress={() => {
             removeOpenAICompatConfig(deleteIdRef.current);
             setShowDialog(false);

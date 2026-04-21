@@ -35,6 +35,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { showInfo } from '../chat/util/ToastUtils';
 import { isMac } from '../App';
 import Share from 'react-native-share';
+import { useI18n } from '../i18n/I18nProvider';
 
 type NavigationProp = DrawerNavigationProp<RouteParamList>;
 
@@ -227,6 +228,7 @@ const animatedMenuStyles = StyleSheet.create({
 function AppGalleryScreen(): React.JSX.Element {
   const navigation = useNavigation<NavigationProp>();
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const [apps, setApps] = useState<AppMetadata[]>([]);
   const [screenWidth, setScreenWidth] = useState(
     Dimensions.get('window').width
@@ -278,9 +280,9 @@ function AppGalleryScreen(): React.JSX.Element {
           }
         />
       ),
-      title: 'App Gallery',
+      title: t('appGallery.title'),
     });
-  }, [navigation, isDark]);
+  }, [navigation, isDark, t]);
 
   const handleLongPress = useCallback(
     (app: AppMetadata, event: GestureResponderEvent) => {
@@ -349,11 +351,11 @@ function AppGalleryScreen(): React.JSX.Element {
       const app = getAppById(selectedApp.id);
       if (app) {
         Clipboard.setString(app.htmlCode);
-        showInfo('Code copied');
+        showInfo(t('appGallery.codeCopied'));
       }
     }
     closeMenu();
-  }, [selectedApp, closeMenu]);
+  }, [selectedApp, closeMenu, t]);
 
   const handleEdit = useCallback(() => {
     if (selectedApp) {
@@ -387,12 +389,12 @@ function AppGalleryScreen(): React.JSX.Element {
             );
             const filePath = `${downloadsPath}/${fileName}`;
             await RNFS.writeFile(filePath, app.htmlCode, 'utf8');
-            showInfo('Saved to Downloads');
+            showInfo(t('appGallery.savedToDownloads'));
           } else if (Platform.OS === 'android') {
             // On Android, save to Downloads folder
             const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
             await RNFS.writeFile(filePath, app.htmlCode, 'utf8');
-            showInfo('Saved to Downloads');
+            showInfo(t('appGallery.savedToDownloads'));
           } else {
             // On iOS mobile, save to Documents then use Share sheet
             const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
@@ -408,25 +410,25 @@ function AppGalleryScreen(): React.JSX.Element {
           console.log('Error saving file:', error);
           // User cancelled share is not an error
           if ((error as Error).message !== 'User did not share') {
-            Alert.alert('Error', 'Failed to save file');
+            Alert.alert(t('common.error'), t('appGallery.failedToSave'));
           }
         }
       }
     }
     closeMenu();
-  }, [selectedApp, closeMenu]);
+  }, [selectedApp, closeMenu, t]);
 
   const handleDelete = useCallback(() => {
     if (selectedApp) {
       const app = selectedApp;
       closeMenu();
       Alert.alert(
-        'Delete App',
-        `Are you sure you want to delete "${app.name}"?`,
+        t('appGallery.deleteApp'),
+        t('appGallery.deleteAppConfirm', { name: app.name }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: async () => {
               if (app.screenshotPath) {
@@ -450,7 +452,7 @@ function AppGalleryScreen(): React.JSX.Element {
         ]
       );
     }
-  }, [selectedApp, closeMenu, loadApps]);
+  }, [selectedApp, closeMenu, loadApps, t]);
 
   const handleOpenApp = useCallback(
     (appMetadata: AppMetadata) => {
@@ -485,7 +487,7 @@ function AppGalleryScreen(): React.JSX.Element {
                 />
               ) : (
                 <View style={styles.placeholderContainer}>
-                  <Text style={styles.placeholderText}>No Preview</Text>
+                  <Text style={styles.placeholderText}>{t('appGallery.noPreview')}</Text>
                 </View>
               )}
             </View>
@@ -507,13 +509,13 @@ function AppGalleryScreen(): React.JSX.Element {
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No saved apps yet</Text>
+        <Text style={styles.emptyText}>{t('appGallery.noApps')}</Text>
         <Text style={styles.emptySubtext}>
-          Generate HTML apps in chat and save them here
+          {t('appGallery.noAppsSubtext')}
         </Text>
       </View>
     ),
-    [styles]
+    [styles, t]
   );
 
   return (
@@ -537,32 +539,32 @@ function AppGalleryScreen(): React.JSX.Element {
         onClose={closeMenu}
         colors={colors}>
         <MenuItem
-          label="Edit"
+          label={t('appGallery.edit')}
           icon={require('../assets/edit.png')}
           onPress={handleEdit}
           colors={colors}
         />
         <MenuItem
-          label="Rename"
+          label={t('appGallery.rename')}
           icon={require('../assets/rename.png')}
           onPress={handleRename}
           colors={colors}
         />
         <MenuItem
-          label="Pin to Top"
+          label={t('appGallery.pinToTop')}
           icon={require('../assets/scroll_down.png')}
           onPress={handlePin}
           rotateIcon
           colors={colors}
         />
         <MenuItem
-          label="Copy Code"
+          label={t('appGallery.copyCode')}
           icon={require('../assets/copy.png')}
           onPress={handleCopy}
           colors={colors}
         />
         <MenuItem
-          label={isMac ? 'Download' : 'Share'}
+          label={isMac ? t('appGallery.download') : t('appGallery.share')}
           icon={
             isMac
               ? require('../assets/download.png')
@@ -572,7 +574,7 @@ function AppGalleryScreen(): React.JSX.Element {
           colors={colors}
         />
         <MenuItem
-          label="Delete"
+          label={t('appGallery.deleteApp')}
           icon={require('../assets/delete.png')}
           onPress={handleDelete}
           isDestructive
@@ -594,12 +596,12 @@ function AppGalleryScreen(): React.JSX.Element {
           <View
             style={styles.renameModalContent}
             onStartShouldSetResponder={() => true}>
-            <Text style={styles.renameTitle}>Rename App</Text>
+            <Text style={styles.renameTitle}>{t('appGallery.renameApp')}</Text>
             <TextInput
               style={styles.renameInput}
               value={newName}
               onChangeText={setNewName}
-              placeholder="App name"
+              placeholder={t('appGallery.appName')}
               placeholderTextColor={colors.placeholder}
               maxLength={20}
               autoFocus
@@ -612,12 +614,12 @@ function AppGalleryScreen(): React.JSX.Element {
                   setSelectedApp(null);
                   setNewName('');
                 }}>
-                <Text style={styles.renameCancelText}>Cancel</Text>
+                <Text style={styles.renameCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.renameConfirmButton}
                 onPress={confirmRename}>
-                <Text style={styles.renameConfirmText}>OK</Text>
+                <Text style={styles.renameConfirmText}>{t('common.ok')}</Text>
               </TouchableOpacity>
             </View>
           </View>

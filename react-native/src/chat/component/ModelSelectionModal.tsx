@@ -26,6 +26,7 @@ import {
 } from '../../storage/StorageUtils';
 import { useTheme, ColorScheme } from '../../theme';
 import { getModelIcon } from '../../utils/ModelUtils.ts';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 interface ModelSelectionModalProps {
   visible: boolean;
@@ -46,6 +47,7 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors);
+  const { t } = useI18n();
   const { sendEvent } = useAppContext();
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model>(getTextModel());
@@ -180,7 +182,7 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
                 },
               ]}>
               <View style={styles.header}>
-                <Text style={styles.title}>Select Model</Text>
+                <Text style={styles.title}>{t('chat.selectModel')}</Text>
                 <TouchableOpacity
                   onPress={handleClose}
                   hitSlop={8}

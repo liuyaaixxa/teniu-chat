@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { isMac } from '../../App';
 import { useTheme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 export interface InputAreaProps {
   onSend: (text: string) => void;
@@ -56,6 +57,7 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
     ref
   ) => {
     const { colors } = useTheme();
+    const { t } = useI18n();
     const textInputRef = useRef<TextInput>(null);
     // Use controlled component for auto-grow to work on iOS
     const [text, setText] = useState('');
@@ -121,7 +123,7 @@ export const InputArea = forwardRef<InputAreaRef, InputAreaProps>(
             <TextInput
               ref={textInputRef}
               style={[styles.textInput, { maxHeight: maxComposerHeight }, textInputStyle]}
-              placeholder="Message"
+              placeholder={t('chat.message')}
               placeholderTextColor={colors.textTertiary}
               multiline
               value={text}

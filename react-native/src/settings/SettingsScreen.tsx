@@ -94,6 +94,9 @@ import { useAppContext } from '../history/AppProvider.tsx';
 import { useTheme, ColorScheme } from '../theme';
 import { requestAllModelsByBedrockAPI } from '../api/bedrock-api-key.ts';
 import OpenAICompatConfigsSection from './OpenAICompatConfigsSection.tsx';
+import CollapsibleSection from './CollapsibleSection.tsx';
+import LanguageSelector from './LanguageSelector.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 const initUpgradeInfo: UpgradeInfo = {
   needUpgrade: false,
@@ -105,6 +108,7 @@ export const GITHUB_LINK = 'https://github.com/aws-samples/swift-chat';
 
 function SettingsScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const allModel = getAllModels();
   const [apiUrl, setApiUrl] = useState(getApiUrl);
   const [apiKey, setApiKey] = useState(getApiKey);
@@ -372,6 +376,7 @@ function SettingsScreen(): React.JSX.Element {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
+      title: t('drawer.settings'),
       // eslint-disable-next-line react/no-unstable-nested-components
       headerRight: () => (
         <CustomHeaderRightButton
@@ -389,7 +394,7 @@ function SettingsScreen(): React.JSX.Element {
         />
       ),
     });
-  }, [apiUrl, apiKey, region, navigation, isDark]);
+  }, [apiUrl, apiKey, region, navigation, isDark, t]);
 
   const regionsData: DropdownItem[] = getAllRegions().map(regionId => ({
     label: regionId ?? '',
@@ -512,7 +517,7 @@ function SettingsScreen(): React.JSX.Element {
                     bedrockConfigMode === 'bedrock' &&
                       styles.configSwitchTextActive,
                   ]}>
-                  Bedrock API Key
+                  {t('settings.configModeApiKey')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -529,39 +534,39 @@ function SettingsScreen(): React.JSX.Element {
                     bedrockConfigMode === 'swiftchat' &&
                       styles.configSwitchTextActive,
                   ]}>
-                  SwiftChat Server
+                  {t('settings.configModeServer')}
                 </Text>
               </TouchableOpacity>
             </View>
             {bedrockConfigMode === 'bedrock' ? (
               <>
                 <CustomTextInput
-                  label="Bedrock API Key"
+                  label={t('settings.bedrockApiKey')}
                   value={bedrockApiKey}
                   onChangeText={setBedrockApiKey}
-                  placeholder="Enter Bedrock API Key"
+                  placeholder={t('settings.enterBedrockApiKey')}
                   secureTextEntry={true}
                 />
               </>
             ) : (
               <>
                 <CustomTextInput
-                  label="API URL"
+                  label={t('settings.apiUrl')}
                   value={apiUrl}
                   onChangeText={setApiUrl}
-                  placeholder="Enter API URL"
+                  placeholder={t('settings.enterApiUrl')}
                 />
                 <CustomTextInput
-                  label="API Key"
+                  label={t('settings.apiKey')}
                   value={apiKey}
                   onChangeText={setApiKey}
-                  placeholder="Enter API Key"
+                  placeholder={t('settings.enterApiKey')}
                   secureTextEntry={true}
                 />
               </>
             )}
             <CustomDropdown
-              label="Region"
+              label={t('settings.region')}
               data={regionsData}
               value={region}
               onChange={(item: DropdownItem) => {
@@ -571,7 +576,7 @@ function SettingsScreen(): React.JSX.Element {
                   fetchAndSetModelNames(false, true).then();
                 }
               }}
-              placeholder="Select a region"
+              placeholder={t('settings.selectRegion')}
             />
           </>
         );
@@ -579,16 +584,16 @@ function SettingsScreen(): React.JSX.Element {
         return (
           <>
             <CustomTextInput
-              label="Ollama API URL"
+              label={t('settings.ollamaApiUrl')}
               value={ollamaApiUrl}
               onChangeText={setOllamaApiUrl}
-              placeholder="Enter Ollama API URL"
+              placeholder={t('settings.enterOllamaApiUrl')}
             />
             <CustomTextInput
-              label="Ollama API Key"
+              label={t('settings.ollamaApiKey')}
               value={ollamaApiKey}
               onChangeText={setOllamaApiKey}
-              placeholder="Enter Ollama API Key (Optional)"
+              placeholder={t('settings.enterOllamaApiKey')}
               secureTextEntry={true}
             />
           </>
@@ -596,10 +601,10 @@ function SettingsScreen(): React.JSX.Element {
       case 'deepseek':
         return (
           <CustomTextInput
-            label="DeepSeek API Key"
+            label={t('settings.deepSeekApiKey')}
             value={deepSeekApiKey}
             onChangeText={setDeepSeekApiKey}
-            placeholder="Enter Deep Seek API Key"
+            placeholder={t('settings.enterDeepSeekApiKey')}
             secureTextEntry={true}
           />
         );
@@ -607,10 +612,10 @@ function SettingsScreen(): React.JSX.Element {
         return (
           <>
             <CustomTextInput
-              label="OpenAI API Key"
+              label={t('settings.openAiApiKey')}
               value={openAIApiKey}
               onChangeText={setOpenAIApiKey}
-              placeholder="Enter OpenAI API Key"
+              placeholder={t('settings.enterOpenAiApiKey')}
               secureTextEntry={true}
             />
             <OpenAICompatConfigsSection
@@ -619,7 +624,7 @@ function SettingsScreen(): React.JSX.Element {
             />
             {apiKey.length > 0 && apiUrl.length > 0 && (
               <View style={styles.proxySwitchContainer}>
-                <Text style={styles.proxyLabel}>Use Proxy</Text>
+                <Text style={styles.proxyLabel}>{t('settings.useProxy')}</Text>
                 <Switch
                   style={[isMac ? styles.switch : {}]}
                   value={openAIProxyEnabled}
@@ -639,215 +644,186 @@ function SettingsScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView style={styles.container}>
-        <View style={styles.providerSettingsWrapper}>
-          <View style={styles.tabContainer}>
-            <TabButton
-              label={isMac ? 'Amazon Bedrock' : 'Bedrock'}
-              isSelected={selectedTab === 'bedrock'}
-              onPress={() => setSelectedTab('bedrock')}
-            />
-            <TabButton
-              label="Ollama"
-              isSelected={selectedTab === 'ollama'}
-              onPress={() => setSelectedTab('ollama')}
-            />
-            <TabButton
-              label="DeepSeek"
-              isSelected={selectedTab === 'deepseek'}
-              onPress={() => setSelectedTab('deepseek')}
-            />
-            <TabButton
-              label="OpenAI"
-              isSelected={selectedTab === 'openai'}
-              onPress={() => setSelectedTab('openai')}
-            />
+        <CollapsibleSection
+          title={t('settings.modelConfig')}
+          defaultExpanded={true}>
+          <View style={styles.providerSettingsWrapper}>
+            <View style={styles.tabContainer}>
+              <TabButton
+                label={isMac ? 'Amazon Bedrock' : 'Bedrock'}
+                isSelected={selectedTab === 'bedrock'}
+                onPress={() => setSelectedTab('bedrock')}
+              />
+              <TabButton
+                label="Ollama"
+                isSelected={selectedTab === 'ollama'}
+                onPress={() => setSelectedTab('ollama')}
+              />
+              <TabButton
+                label="DeepSeek"
+                isSelected={selectedTab === 'deepseek'}
+                onPress={() => setSelectedTab('deepseek')}
+              />
+              <TabButton
+                label="OpenAI"
+                isSelected={selectedTab === 'openai'}
+                onPress={() => setSelectedTab('openai')}
+              />
+            </View>
+
+            <View style={styles.providerSettingsContainer}>
+              {renderProviderSettings()}
+            </View>
           </View>
 
-          <View style={styles.providerSettingsContainer}>
-            {renderProviderSettings()}
-          </View>
-        </View>
-
-        <Text style={[styles.label, styles.middleLabel]}>Select Model</Text>
-        <CustomDropdown
-          label="Chat Model"
-          data={textModelsData}
-          value={selectedTextModel.modelName}
-          onChange={(item: DropdownItem) => {
-            if (item.value !== '') {
-              const selectedModel = textModels.find(
-                model => model.modelName === item.value
-              );
-              if (selectedModel) {
-                saveTextModel(selectedModel);
-                setSelectedTextModel(selectedModel!);
-                updateTextModelUsageOrder(selectedModel);
-                sendEvent('modelChanged');
+          <Text style={[styles.label, styles.middleLabel]}>
+            {t('settings.selectModel')}
+          </Text>
+          <CustomDropdown
+            label={t('settings.chatModel')}
+            data={textModelsData}
+            value={selectedTextModel.modelName}
+            onChange={(item: DropdownItem) => {
+              if (item.value !== '') {
+                const selectedModel = textModels.find(
+                  model => model.modelName === item.value
+                );
+                if (selectedModel) {
+                  saveTextModel(selectedModel);
+                  setSelectedTextModel(selectedModel!);
+                  updateTextModelUsageOrder(selectedModel);
+                  sendEvent('modelChanged');
+                }
               }
-            }
-          }}
-          placeholder="Select a model"
-        />
-        {selectedTextModel &&
-          BedrockThinkingModels.includes(selectedTextModel.modelName) && (
-            <View style={styles.thinkingSwitchContainer}>
-              <Text style={styles.proxyLabel}>Enable Thinking</Text>
+            }}
+            placeholder={t('settings.selectChatModel')}
+          />
+          {selectedTextModel &&
+            BedrockThinkingModels.includes(selectedTextModel.modelName) && (
+              <View style={styles.thinkingSwitchContainer}>
+                <Text style={styles.proxyLabel}>
+                  {t('settings.enableThinking')}
+                </Text>
+                <Switch
+                  style={[isMac ? styles.switch : {}]}
+                  value={thinkingEnabled}
+                  onValueChange={toggleThinking}
+                />
+              </View>
+            )}
+
+          {selectedTextModel &&
+            BedrockVoiceModels.includes(selectedTextModel.modelName) && (
+              <CustomDropdown
+                label={t('settings.voiceId')}
+                data={voiceIDData}
+                value={voiceId}
+                onChange={(item: DropdownItem) => {
+                  if (item.value !== '') {
+                    setVoiceId(item.value);
+                    saveVoiceId(item.value);
+                  }
+                }}
+                placeholder={t('settings.selectVoiceId')}
+              />
+            )}
+
+          <CustomDropdown
+            label={t('settings.imageModel')}
+            data={imageModelsData}
+            value={selectedImageModel}
+            onChange={(item: DropdownItem) => {
+              if (item.value !== '') {
+                setSelectedImageModel(item.value);
+                const selectedModel = imageModels.find(
+                  model => model.modelId === item.value
+                );
+                if (selectedModel) {
+                  saveImageModel(selectedModel);
+                  if (isNewStabilityImageModel(item.value)) {
+                    setImageSize('1024 x 1024');
+                    saveImageSize('1024 x 1024');
+                  }
+                }
+              }
+            }}
+            placeholder={t('settings.selectChatModel')}
+          />
+          <CustomDropdown
+            label={t('settings.imageSize')}
+            data={imageSizesData}
+            value={imageSize}
+            onChange={(item: DropdownItem) => {
+              if (item.value !== '') {
+                setImageSize(item.value);
+                saveImageSize(item.value);
+              }
+            }}
+            placeholder={t('settings.selectImageSize')}
+          />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title={t('settings.webSearch')}
+          defaultExpanded={false}>
+          <CustomTextInput
+            label={t('settings.tavilyApiKey')}
+            value={tavilyApiKey}
+            onChangeText={text => {
+              setTavilyApiKey(text);
+              saveTavilyApiKey(text);
+            }}
+            placeholder={t('settings.enterTavilyApiKey')}
+            secureTextEntry={true}
+          />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title={t('settings.languageSettings')}
+          defaultExpanded={true}>
+          <Text style={styles.proxyLabel}>
+            {t('settings.languageDescription')}
+          </Text>
+          <LanguageSelector />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title={t('settings.general')}
+          defaultExpanded={false}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.itemContainer}
+            onPress={() => navigation.navigate('TokenUsage', {})}>
+            <Text style={styles.label}>{t('settings.usage')}</Text>
+            <View style={styles.arrowContainer}>
+              <Text style={styles.text}>{`USD ${cost}`}</Text>
+              <Image
+                style={styles.arrowImage}
+                source={
+                  isDark
+                    ? require('../assets/back_dark.png')
+                    : require('../assets/back.png')
+                }
+              />
+            </View>
+          </TouchableOpacity>
+          {!isMac && (
+            <View style={styles.switchContainer}>
+              <Text style={styles.label}>
+                {t('settings.hapticFeedback')}
+              </Text>
               <Switch
-                style={[isMac ? styles.switch : {}]}
-                value={thinkingEnabled}
-                onValueChange={toggleThinking}
+                value={hapticEnabled}
+                onValueChange={toggleHapticFeedback}
               />
             </View>
           )}
-
-        {selectedTextModel &&
-          BedrockVoiceModels.includes(selectedTextModel.modelName) && (
-            <CustomDropdown
-              label="Voice ID"
-              data={voiceIDData}
-              value={voiceId}
-              onChange={(item: DropdownItem) => {
-                if (item.value !== '') {
-                  setVoiceId(item.value);
-                  saveVoiceId(item.value);
-                }
-              }}
-              placeholder="Select Voice ID"
-            />
-          )}
-
-        <CustomDropdown
-          label="Image Model"
-          data={imageModelsData}
-          value={selectedImageModel}
-          onChange={(item: DropdownItem) => {
-            if (item.value !== '') {
-              setSelectedImageModel(item.value);
-              const selectedModel = imageModels.find(
-                model => model.modelId === item.value
-              );
-              if (selectedModel) {
-                saveImageModel(selectedModel);
-                if (isNewStabilityImageModel(item.value)) {
-                  setImageSize('1024 x 1024');
-                  saveImageSize('1024 x 1024');
-                }
-              }
-            }
-          }}
-          placeholder="Select a model"
-        />
-        <CustomDropdown
-          label="Image Size"
-          data={imageSizesData}
-          value={imageSize}
-          onChange={(item: DropdownItem) => {
-            if (item.value !== '') {
-              setImageSize(item.value);
-              saveImageSize(item.value);
-            }
-          }}
-          placeholder="Select image size"
-        />
-
-        <Text style={[styles.label, styles.middleLabel]}>Web Search</Text>
-
-        <CustomTextInput
-          label="Tavily API Key"
-          value={tavilyApiKey}
-          onChangeText={text => {
-            setTavilyApiKey(text);
-            saveTavilyApiKey(text);
-          }}
-          placeholder="Enter Tavily API Key"
-          secureTextEntry={true}
-        />
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.itemContainer}
-          onPress={() => navigation.navigate('TokenUsage', {})}>
-          <Text style={styles.label}>Usage</Text>
-          <View style={styles.arrowContainer}>
-            <Text style={styles.text}>{`USD ${cost}`}</Text>
-            <Image
-              style={styles.arrowImage}
-              source={
-                isDark
-                  ? require('../assets/back_dark.png')
-                  : require('../assets/back.png')
-              }
-            />
-          </View>
-        </TouchableOpacity>
-        {!isMac && (
-          <View style={styles.switchContainer}>
-            <Text style={styles.label}>Haptic Feedback</Text>
-            <Switch
-              value={hapticEnabled}
-              onValueChange={toggleHapticFeedback}
-            />
-          </View>
-        )}
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.itemContainer}
-          onPress={() => Linking.openURL(GITHUB_LINK)}>
-          <Text style={styles.label}>Configuration Guide</Text>
-          <Image
-            style={styles.arrowImage}
-            source={
-              isDark
-                ? require('../assets/back_dark.png')
-                : require('../assets/back.png')
-            }
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.itemContainer}
-          onPress={() =>
-            Linking.openURL(GITHUB_LINK + '/discussions/new?category=general')
-          }>
-          <Text style={styles.label}>Submit Feedback</Text>
-          <Image
-            style={styles.arrowImage}
-            source={
-              isDark
-                ? require('../assets/back_dark.png')
-                : require('../assets/back.png')
-            }
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.itemContainer}
-          onPress={() =>
-            Linking.openURL(
-              GITHUB_LINK + '/issues/new?template=bug_report.yaml'
-            )
-          }>
-          <Text style={styles.label}>Report an Issue</Text>
-          <Image
-            style={styles.arrowImage}
-            source={
-              isDark
-                ? require('../assets/back_dark.png')
-                : require('../assets/back.png')
-            }
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.itemContainer}
-          activeOpacity={1}
-          onPress={handleCheckUpgrade}>
-          <Text style={styles.label}>App Version</Text>
-          <View style={styles.arrowContainer}>
-            <Text style={styles.text}>
-              {packageJson.version +
-                (Platform.OS === 'ios' && getBuildNumber()
-                  ? ` (${getBuildNumber()})`
-                  : '') +
-                (upgradeInfo.needUpgrade ? ` → ${upgradeInfo.version}` : '')}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.itemContainer}
+            onPress={() => Linking.openURL(GITHUB_LINK)}>
+            <Text style={styles.label}>
+              {t('settings.configGuide')}
             </Text>
             <Image
               style={styles.arrowImage}
@@ -857,27 +833,96 @@ function SettingsScreen(): React.JSX.Element {
                   : require('../assets/back.png')
               }
             />
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.clearDataButton}
-          activeOpacity={0.7}
-          onPress={handleOpenClearDialog}>
-          <Text style={styles.clearDataButtonText}>Clear All Chat History</Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.itemContainer}
+            onPress={() =>
+              Linking.openURL(GITHUB_LINK + '/discussions/new?category=general')
+            }>
+            <Text style={styles.label}>
+              {t('settings.submitFeedback')}
+            </Text>
+            <Image
+              style={styles.arrowImage}
+              source={
+                isDark
+                  ? require('../assets/back_dark.png')
+                  : require('../assets/back.png')
+              }
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.itemContainer}
+            onPress={() =>
+              Linking.openURL(
+                GITHUB_LINK + '/issues/new?template=bug_report.yaml'
+              )
+            }>
+            <Text style={styles.label}>
+              {t('settings.reportIssue')}
+            </Text>
+            <Image
+              style={styles.arrowImage}
+              source={
+                isDark
+                  ? require('../assets/back_dark.png')
+                  : require('../assets/back.png')
+              }
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.itemContainer}
+            activeOpacity={1}
+            onPress={handleCheckUpgrade}>
+            <Text style={styles.label}>
+              {t('settings.appVersion')}
+            </Text>
+            <View style={styles.arrowContainer}>
+              <Text style={styles.text}>
+                {packageJson.version +
+                  (Platform.OS === 'ios' && getBuildNumber()
+                    ? ` (${getBuildNumber()})`
+                    : '') +
+                  (upgradeInfo.needUpgrade
+                    ? ` → ${upgradeInfo.version}`
+                    : '')}
+              </Text>
+              <Image
+                style={styles.arrowImage}
+                source={
+                  isDark
+                    ? require('../assets/back_dark.png')
+                    : require('../assets/back.png')
+                }
+              />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.clearDataButton}
+            activeOpacity={0.7}
+            onPress={handleOpenClearDialog}>
+            <Text style={styles.clearDataButtonText}>
+              {t('settings.clearAllChatHistory')}
+            </Text>
+          </TouchableOpacity>
+        </CollapsibleSection>
       </ScrollView>
       <Dialog.Container visible={showClearDialog}>
-        <Dialog.Title>Clear All Data</Dialog.Title>
+        <Dialog.Title>{t('settings.clearAllDataTitle')}</Dialog.Title>
         <Dialog.Description>
-          This will delete all chat history and saved files. This action cannot
-          be undone.
-          {clearCountdown > 0
-            ? `\n\nPlease wait ${clearCountdown} seconds to confirm.`
-            : '\n\nYou can now confirm the deletion.'}
+          {t('settings.clearAllDataDescription') +
+            (clearCountdown > 0
+              ? '\n\n' + t('settings.clearCountdown', { count: clearCountdown })
+              : '\n\n' + t('settings.clearReady'))}
         </Dialog.Description>
-        <Dialog.Button label="Cancel" onPress={handleCloseClearDialog} />
         <Dialog.Button
-          label={isClearing ? 'Clearing...' : 'Confirm'}
+          label={t('common.cancel')}
+          onPress={handleCloseClearDialog}
+        />
+        <Dialog.Button
+          label={isClearing ? t('settings.clearing') : t('settings.confirm')}
           onPress={handleClearAllData}
           disabled={clearCountdown > 0 || isClearing}
           color={clearCountdown > 0 ? '#999' : '#FF3B30'}

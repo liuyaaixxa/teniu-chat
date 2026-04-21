@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { OpenAICompatConfig } from '../types/Chat.ts';
 import CustomTextInput from './CustomTextInput.tsx';
 import { useTheme, ColorScheme } from '../theme';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 
 interface OpenAICompatConfigComponentProps {
   config: OpenAICompatConfig;
@@ -27,10 +28,11 @@ export default function OpenAICompatConfigComponent({
 }: OpenAICompatConfigComponentProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { t } = useI18n();
 
   const displayName = isFirst
-    ? 'OpenAI Compatible'
-    : `OpenAI Compatible ${index + 1}`;
+    ? t('settings.openAiCompatible')
+    : `${t('settings.openAiCompatible')} ${index + 1}`;
 
   return (
     <View style={styles.container}>
@@ -51,26 +53,26 @@ export default function OpenAICompatConfigComponent({
       )}
 
       <CustomTextInput
-        label="Base URL"
+        label={t('settings.baseUrl')}
         value={config.baseUrl}
         onChangeText={value => onUpdate(config.id, 'baseUrl', value.trim())}
-        placeholder="Enter Base URL"
+        placeholder={t('settings.enterBaseUrl')}
         secureTextEntry={false}
       />
 
       <CustomTextInput
-        label="API Key"
+        label={t('settings.apiKey')}
         value={config.apiKey}
         onChangeText={value => onUpdate(config.id, 'apiKey', value.trim())}
-        placeholder="Enter API Key"
+        placeholder={t('settings.enterApiKey')}
         secureTextEntry={true}
       />
 
       <CustomTextInput
-        label="Model ID"
+        label={t('settings.modelId')}
         value={config.modelIds}
         onChangeText={value => onUpdate(config.id, 'modelIds', value.trim())}
-        placeholder="Enter Model IDs, split by comma"
+        placeholder={t('settings.enterModelIds')}
         secureTextEntry={false}
         numberOfLines={4}
       />

@@ -28,6 +28,7 @@ import { trigger } from '../chat/util/HapticUtils.ts';
 import { HapticFeedbackTypes } from 'react-native-haptic-feedback/src';
 import { groupMessagesByDate } from './HistoryGroupUtil.ts';
 import { isMac } from '../App.tsx';
+import { useI18n } from '../i18n/I18nProvider.tsx';
 import { DrawerActions } from '@react-navigation/native';
 import { useTheme, ColorScheme } from '../theme';
 import { backgroundStreamManager } from '../chat/service/BackgroundStreamManager';
@@ -83,6 +84,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = ({
   const isSlideDrawerEnabledRef = useRef<boolean>(false);
   const { event, sendEvent } = useAppContext();
   const { drawerType, setDrawerType } = useAppContext();
+  const { t } = useI18n();
 
   const [activeStreamIds, setActiveStreamIds] = useState<Set<number>>(
     () => new Set(backgroundStreamManager.getActiveSessionIds())
@@ -204,7 +206,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = ({
                 }
                 style={styles.settingsLeftImg}
               />
-              <Text style={styles.settingsText}>Chat</Text>
+              <Text style={styles.settingsText}>{t('drawer.chat')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.settingsTouch}
@@ -220,7 +222,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = ({
                 }
                 style={styles.settingsLeftImg}
               />
-              <Text style={styles.settingsText}>Image</Text>
+              <Text style={styles.settingsText}>{t('drawer.image')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.settingsTouch}
@@ -236,7 +238,7 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = ({
                 }
                 style={styles.appLeftImg}
               />
-              <Text style={styles.settingsText}>App</Text>
+              <Text style={styles.settingsText}>{t('drawer.app')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -301,19 +303,19 @@ const CustomDrawerContent: React.FC<DrawerContentComponentProps> = ({
           }
           style={styles.settingsLeftImg}
         />
-        <Text style={styles.settingsText}>Settings</Text>
+        <Text style={styles.settingsText}>{t('drawer.settings')}</Text>
       </TouchableOpacity>
       <Dialog.Container visible={showDialog}>
-        <Dialog.Title>Delete Message</Dialog.Title>
-        <Dialog.Description>You cannot undo this action.</Dialog.Description>
+        <Dialog.Title>{t('drawer.deleteTitle')}</Dialog.Title>
+        <Dialog.Description>{t('drawer.deleteDescription')}</Dialog.Description>
         <Dialog.Button
-          label="Cancel"
+          label={t('common.cancel')}
           onPress={() => {
             setShowDialog(false);
           }}
         />
         <Dialog.Button
-          label="Delete"
+          label={t('common.delete')}
           onPress={() => {
             handleDelete();
             setShowDialog(false);

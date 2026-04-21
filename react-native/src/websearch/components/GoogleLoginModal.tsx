@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider.tsx';
 
 interface GoogleLoginModalProps {
   visible: boolean;
@@ -21,6 +22,7 @@ export const GoogleLoginModal: React.FC<GoogleLoginModalProps> = ({
   onDone,
 }) => {
   const { colors } = useTheme();
+  const { t } = useI18n();
 
   const styles = useMemo(
     () =>
@@ -105,7 +107,7 @@ export const GoogleLoginModal: React.FC<GoogleLoginModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Sign in to Google</Text>
+            <Text style={styles.headerTitle}>{t('webSearch.signInToGoogle')}</Text>
           </View>
           <View style={styles.webViewContainer}>
             <WebView
@@ -119,12 +121,12 @@ export const GoogleLoginModal: React.FC<GoogleLoginModalProps> = ({
             <TouchableOpacity
               style={[styles.button, styles.skipButton]}
               onPress={onSkip}>
-              <Text style={styles.skipButtonText}>Skip</Text>
+              <Text style={styles.skipButtonText}>{t('webSearch.skip')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.doneButton]}
               onPress={onDone}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('webSearch.done')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -26,6 +26,7 @@ import { injectErrorScript } from '../chat/component/markdown/htmlUtils';
 import { isMac } from '../App';
 import DocumentPicker from 'react-native-document-picker';
 import Clipboard from '@react-native-clipboard/clipboard';
+import { useI18n } from '../i18n/I18nProvider';
 
 type NavigationProp = DrawerNavigationProp<RouteParamList>;
 
@@ -45,6 +46,7 @@ const isHtmlContent = (content: string): boolean => {
 function CreateAppScreen(): React.JSX.Element {
   const navigation = useNavigation<NavigationProp>();
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
   const styles = createStyles(colors);
 
   const [appName, setAppName] = useState('');
@@ -64,9 +66,9 @@ function CreateAppScreen(): React.JSX.Element {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft,
-      title: 'Create App',
+      title: t('createApp.title'),
     });
-  }, [navigation, headerLeft]);
+  }, [navigation, headerLeft, t]);
 
   // Auto-detect HTML and switch to preview
   const handleCodeChange = useCallback(
@@ -112,10 +114,10 @@ function CreateAppScreen(): React.JSX.Element {
     } catch (err) {
       if (!DocumentPicker.isCancel(err)) {
         console.error('Error picking file:', err);
-        Alert.alert('Error', 'Failed to read file');
+        Alert.alert(t('common.error'), t('createApp.failedToReadFile'));
       }
     }
-  }, [handleCodeChange]);
+  }, [handleCodeChange, t]);
 
   const htmlContent = useMemo(
     () => (showPreview ? injectErrorScript(htmlCode) : ''),
@@ -215,16 +217,16 @@ function CreateAppScreen(): React.JSX.Element {
         saveApp(app);
 
         setIsSaving(false);
-        Alert.alert('Success', `App "${appName}" created successfully!`, [
-          { text: 'OK', onPress: () => navigation.goBack() },
+        Alert.alert(t('common.success'), t('createApp.appCreated', { name: appName }), [
+          { text: t('common.ok'), onPress: () => navigation.goBack() },
         ]);
       } catch (error) {
         console.error('[CreateApp] Save error:', error);
         setIsSaving(false);
-        Alert.alert('Error', 'Failed to save app');
+        Alert.alert(t('common.error'), t('createApp.failedToSaveApp'));
       }
     },
-    [appName, htmlCode, navigation]
+    [appName, htmlCode, navigation, t]
   );
 
   // Retry screenshot capture
@@ -261,13 +263,13 @@ function CreateAppScreen(): React.JSX.Element {
       saveApp(app);
 
       setIsSaving(false);
-      Alert.alert('Success', `App "${appName}" created (without preview)`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      Alert.alert(t('common.success'), t('createApp.appCreatedNoPreview', { name: appName }), [
+        { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
       console.error('[CreateApp] Save error:', error);
       setIsSaving(false);
-      Alert.alert('Error', 'Failed to save app');
+      Alert.alert(t('common.error'), t('createApp.failedToSaveApp'));
     }
   }, [appName, htmlCode, navigation]);
 
@@ -308,22 +310,22 @@ function CreateAppScreen(): React.JSX.Element {
 
   const handleCreate = useCallback(() => {
     if (!appName.trim()) {
-      Alert.alert('Error', 'Please enter an app name');
+      Alert.alert(t('common.error'), t('createApp.enterAppName'));
       return;
     }
     if (appName.length > MAX_NAME_LENGTH) {
       Alert.alert(
-        'Error',
-        `App name must be ${MAX_NAME_LENGTH} characters or less`
+        t('common.error'),
+        t('createApp.nameTooLong', { max: MAX_NAME_LENGTH })
       );
       return;
     }
     if (!htmlCode.trim()) {
-      Alert.alert('Error', 'Please enter HTML code');
+      Alert.alert(t('common.error'), t('createApp.enterHtml'));
       return;
     }
     if (!isHtmlContent(htmlCode)) {
-      Alert.alert('Error', 'Please enter valid HTML code with <html> tags');
+      Alert.alert(t('common.error'), t('createApp.enterValidHtml'));
       return;
     }
 
@@ -336,7 +338,7 @@ function CreateAppScreen(): React.JSX.Element {
     } else {
       handleSaveWithoutScreenshot();
     }
-  }, [appName, htmlCode, captureScreenshot, handleSaveWithoutScreenshot]);
+  }, [appName, htmlCode, captureScreenshot, handleSaveWithoutScreenshot, t]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -348,7 +350,7 @@ function CreateAppScreen(): React.JSX.Element {
           {/* Name Input */}
           <TextInput
             style={[styles.input, isMac && styles.macInput]}
-            placeholder="App name (max 20 chars)"
+            placeholder={t('createApp.appNamePlaceholder')}
             placeholderTextColor={colors.placeholder}
             value={appName}
             onChangeText={text => setAppName(text.slice(0, MAX_NAME_LENGTH))}
@@ -377,7 +379,7 @@ function CreateAppScreen(): React.JSX.Element {
                 contentContainerStyle={styles.codeScrollContent}>
                 <TextInput
                   style={[styles.codeInput, isMac && styles.macInput]}
-                  placeholder="Paste HTML code here..."
+                  placeholder={t('createApp.pasteHtml')}
                   placeholderTextColor={colors.placeholder}
                   value={htmlCode}
                   onChangeText={handleCodeChange}
@@ -390,11 +392,11 @@ function CreateAppScreen(): React.JSX.Element {
           ) : (
             <View style={styles.previewContainer}>
               <View style={styles.previewHeader}>
-                <Text style={styles.previewTitle}>Preview</Text>
+                <Text style={styles.previewTitle}>{t('createApp.preview')}</Text>
                 <TouchableOpacity
                   onPress={() => setShowPreview(false)}
                   style={styles.editButton}>
-                  <Text style={styles.editButtonText}>Edit</Text>
+                  <Text style={styles.editButtonText}>{t('createApp.edit')}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.webViewContainer}>
@@ -408,7 +410,7 @@ function CreateAppScreen(): React.JSX.Element {
                 />
                 {hasError && (
                   <View style={styles.errorOverlay}>
-                    <Text style={styles.errorText}>Invalid HTML</Text>
+                    <Text style={styles.errorText}>{t('createApp.invalidHtml')}</Text>
                     {errorMessage ? (
                       <>
                         <Text style={styles.errorDetail} numberOfLines={3}>
@@ -419,7 +421,7 @@ function CreateAppScreen(): React.JSX.Element {
                           onPress={() => {
                             Clipboard.setString(errorMessage);
                           }}>
-                          <Text style={styles.copyErrorText}>Copy Error</Text>
+                          <Text style={styles.copyErrorText}>{t('createApp.copyError')}</Text>
                         </TouchableOpacity>
                       </>
                     ) : null}
@@ -435,7 +437,7 @@ function CreateAppScreen(): React.JSX.Element {
             onPress={handleCreate}
             disabled={isSaving}>
             <Text style={styles.createButtonText}>
-              {isSaving ? 'Creating...' : 'Create'}
+              {isSaving ? t('createApp.creating') : t('createApp.create')}
             </Text>
           </TouchableOpacity>
         </View>
