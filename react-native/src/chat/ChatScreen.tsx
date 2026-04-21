@@ -8,6 +8,8 @@ import {
   NativeSyntheticEvent,
   Platform,
   StyleSheet,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -22,7 +24,12 @@ import { ColorScheme, useTheme } from '../theme';
 import { invokeBedrockWithCallBack, requestToken } from '../api/bedrock-api';
 import CustomMessageComponent from './component/CustomMessageComponent.tsx';
 import { EmptyChatComponent } from './component/EmptyChatComponent.tsx';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  DrawerActions,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { v4 as uuidv4 } from 'uuid';
 import { RouteParamList } from '../types/RouteTypes.ts';
 import {
@@ -295,6 +302,15 @@ function ChatScreen(): React.JSX.Element {
     currentMode = mode;
     systemPromptRef.current = systemPrompt;
     const headerOptions: HeaderOptions = {
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+          style={{ marginLeft: 16 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={{ fontSize: 22, color: colors.text }}>☰</Text>
+        </TouchableOpacity>
+      ),
       // eslint-disable-next-line react/no-unstable-nested-components
       headerTitle: () => (
         <HeaderTitle
