@@ -89,7 +89,13 @@
     "teniuAiApiKey": "API Key",
     "enterTeniuAiApiKey": "API Keyを入力",
     "teniuAiModelIds": "モデルID",
-    "enterTeniuAiModelIds": "モデルIDをカンマ区切りで入力"
+    "enterTeniuAiModelIds": "モデルIDをカンマ区切りで入力",
+    "openClawBaseUrl": "Base URL",
+    "enterOpenClawBaseUrl": "http://127.0.0.1:18789/v1",
+    "openClawApiKey": "Auth Token",
+    "enterOpenClawApiKey": "Auth Tokenを入力（任意）",
+    "openClawModelIds": "モデルID",
+    "enterOpenClawModelIds": "openclaw, openclaw/default"
   },
   "chat": {
     "message": "メッセージ",

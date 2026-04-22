@@ -89,7 +89,13 @@
     "teniuAiApiKey": "API Key",
     "enterTeniuAiApiKey": "API Key 입력",
     "teniuAiModelIds": "모델 ID",
-    "enterTeniuAiModelIds": "모델 ID를 쉼표로 구분하여 입력"
+    "enterTeniuAiModelIds": "모델 ID를 쉼표로 구분하여 입력",
+    "openClawBaseUrl": "Base URL",
+    "enterOpenClawBaseUrl": "http://127.0.0.1:18789/v1",
+    "openClawApiKey": "Auth Token",
+    "enterOpenClawApiKey": "Auth Token 입력 (선택사항)",
+    "openClawModelIds": "모델 ID",
+    "enterOpenClawModelIds": "openclaw, openclaw/default"
   },
   "chat": {
     "message": "메시지",

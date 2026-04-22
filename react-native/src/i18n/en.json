@@ -89,7 +89,13 @@
     "teniuAiApiKey": "API Key",
     "enterTeniuAiApiKey": "Enter API Key",
     "teniuAiModelIds": "Model IDs",
-    "enterTeniuAiModelIds": "Enter Model IDs, split by comma"
+    "enterTeniuAiModelIds": "Enter Model IDs, split by comma",
+    "openClawBaseUrl": "Base URL",
+    "enterOpenClawBaseUrl": "http://127.0.0.1:18789/v1",
+    "openClawApiKey": "Auth Token",
+    "enterOpenClawApiKey": "Enter Auth Token (optional)",
+    "openClawModelIds": "Model IDs",
+    "enterOpenClawModelIds": "openclaw, openclaw/default"
   },
   "chat": {
     "message": "Message",

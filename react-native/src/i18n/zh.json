@@ -89,7 +89,13 @@
     "teniuAiApiKey": "API Key",
     "enterTeniuAiApiKey": "输入 API Key",
     "teniuAiModelIds": "模型 ID",
-    "enterTeniuAiModelIds": "输入模型 ID，用逗号分隔"
+    "enterTeniuAiModelIds": "输入模型 ID，用逗号分隔",
+    "openClawBaseUrl": "Base URL",
+    "enterOpenClawBaseUrl": "http://127.0.0.1:18789/v1",
+    "openClawApiKey": "Auth Token",
+    "enterOpenClawApiKey": "输入 Auth Token（可选）",
+    "openClawModelIds": "模型 ID",
+    "enterOpenClawModelIds": "openclaw, openclaw/default"
   },
   "chat": {
     "message": "消息",

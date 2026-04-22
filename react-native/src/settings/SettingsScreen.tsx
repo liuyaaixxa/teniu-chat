@@ -66,6 +66,13 @@ import {
   getTeniuAiModelIds,
   saveTeniuAiModelIds,
   generateTeniuAiModels,
+  getOpenClawBaseUrl,
+  saveOpenClawBaseUrl,
+  getOpenClawApiKey,
+  saveOpenClawApiKey,
+  getOpenClawModelIds,
+  saveOpenClawModelIds,
+  generateOpenClawModels,
 } from '../storage/StorageUtils.ts';
 import { CustomHeaderRightButton } from '../chat/component/CustomHeaderRightButton.tsx';
 import { RouteParamList } from '../types/RouteTypes.ts';
@@ -153,6 +160,9 @@ function SettingsScreen(): React.JSX.Element {
   const [teniuAiBaseUrl, setTeniuAiBaseUrl] = useState(getTeniuAiBaseUrl);
   const [teniuAiApiKey, setTeniuAiApiKey] = useState(getTeniuAiApiKey);
   const [teniuAiModelIds, setTeniuAiModelIds] = useState(getTeniuAiModelIds);
+  const [openClawBaseUrl, setOpenClawBaseUrl] = useState(getOpenClawBaseUrl);
+  const [openClawApiKey, setOpenClawApiKey] = useState(getOpenClawApiKey);
+  const [openClawModelIds, setOpenClawModelIds] = useState(getOpenClawModelIds);
   const { sendEvent } = useAppContext();
   const sendEventRef = useRef(sendEvent);
   const openAICompatConfigsRef = useRef(openAICompatConfigs);
@@ -233,6 +243,9 @@ function SettingsScreen(): React.JSX.Element {
       // Generate TeniuAI models
       const teniuAiModelList = generateTeniuAiModels();
 
+      // Generate OpenClaw models
+      const openClawModelList = generateOpenClawModels();
+
       // Combine all text models
       const allTextModels =
         bedrockResponse.textModel.length === 0
@@ -242,6 +255,7 @@ function SettingsScreen(): React.JSX.Element {
               ...getDefaultApiKeyModels(),
               ...openAICompatModelList,
               ...teniuAiModelList,
+              ...openClawModelList,
             ]
           : [
               ...bedrockResponse.textModel,
@@ -249,6 +263,7 @@ function SettingsScreen(): React.JSX.Element {
               ...getDefaultApiKeyModels(),
               ...openAICompatModelList,
               ...teniuAiModelList,
+              ...openClawModelList,
             ];
 
       setTextModels(allTextModels);
@@ -401,6 +416,30 @@ function SettingsScreen(): React.JSX.Element {
     saveTeniuAiModelIds(teniuAiModelIds.trim());
     fetchAndSetModelNamesRef.current(false, false).then();
   }, [teniuAiModelIds]);
+
+  useEffect(() => {
+    if (openClawBaseUrl === getOpenClawBaseUrl()) {
+      return;
+    }
+    saveOpenClawBaseUrl(openClawBaseUrl.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [openClawBaseUrl]);
+
+  useEffect(() => {
+    if (openClawApiKey === getOpenClawApiKey()) {
+      return;
+    }
+    saveOpenClawApiKey(openClawApiKey.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [openClawApiKey]);
+
+  useEffect(() => {
+    if (openClawModelIds === getOpenClawModelIds()) {
+      return;
+    }
+    saveOpenClawModelIds(openClawModelIds.trim());
+    fetchAndSetModelNamesRef.current(false, false).then();
+  }, [openClawModelIds]);
 
   const fetchUpgradeInfo = async () => {
     if (isMac || Platform.OS === 'android') {
@@ -562,6 +601,30 @@ function SettingsScreen(): React.JSX.Element {
             />
           </>
         );
+      case 'openclaw':
+        return (
+          <>
+            <CustomTextInput
+              label={t('settings.openClawBaseUrl')}
+              value={openClawBaseUrl}
+              onChangeText={setOpenClawBaseUrl}
+              placeholder={t('settings.enterOpenClawBaseUrl')}
+            />
+            <CustomTextInput
+              label={t('settings.openClawApiKey')}
+              value={openClawApiKey}
+              onChangeText={setOpenClawApiKey}
+              placeholder={t('settings.enterOpenClawApiKey')}
+              secureTextEntry={true}
+            />
+            <CustomTextInput
+              label={t('settings.openClawModelIds')}
+              value={openClawModelIds}
+              onChangeText={setOpenClawModelIds}
+              placeholder={t('settings.enterOpenClawModelIds')}
+            />
+          </>
+        );
       // Bedrock tab hidden — code preserved for future use
       // case 'bedrock':
       //   return (
@@ -717,6 +780,11 @@ function SettingsScreen(): React.JSX.Element {
                 label="TeniuAI"
                 isSelected={selectedTab === 'teniuai'}
                 onPress={() => setSelectedTab('teniuai')}
+              />
+              <TabButton
+                label="OpenClaw"
+                isSelected={selectedTab === 'openclaw'}
+                onPress={() => setSelectedTab('openclaw')}
               />
               {/* Bedrock tab hidden — code preserved for future use
               <TabButton

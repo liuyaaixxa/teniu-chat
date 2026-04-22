@@ -84,6 +84,9 @@ const googleLoginDoneKey = keyPrefix + 'googleLoginDoneKey';
 const teniuAiBaseUrlKey = keyPrefix + 'teniuAiBaseUrlKey';
 const teniuAiApiKeyTag = keyPrefix + 'teniuAiApiKeyTag';
 const teniuAiModelIdsKey = keyPrefix + 'teniuAiModelIdsKey';
+const openClawBaseUrlKey = keyPrefix + 'openClawBaseUrlKey';
+const openClawApiKeyTag = keyPrefix + 'openClawApiKeyTag';
+const openClawModelIdsKey = keyPrefix + 'openClawModelIdsKey';
 
 let currentApiUrl: string | undefined;
 let currentApiKey: string | undefined;
@@ -1047,6 +1050,57 @@ export function generateTeniuAiModels(): Model[] {
         modelName: displayName,
         modelTag: ModelTag.OpenAICompatible,
         uniqueId: 'teniuai',
+        apiKey,
+        apiUrl: baseUrl,
+      } as Model;
+    });
+}
+
+// OpenClaw
+export function getOpenClawBaseUrl(): string {
+  return storage.getString(openClawBaseUrlKey) ?? '';
+}
+
+export function saveOpenClawBaseUrl(url: string) {
+  storage.set(openClawBaseUrlKey, url);
+}
+
+export function getOpenClawApiKey(): string {
+  return encryptStorage.getString(openClawApiKeyTag) ?? '';
+}
+
+export function saveOpenClawApiKey(key: string) {
+  encryptStorage.set(openClawApiKeyTag, key);
+}
+
+export function getOpenClawModelIds(): string {
+  return storage.getString(openClawModelIdsKey) ?? '';
+}
+
+export function saveOpenClawModelIds(ids: string) {
+  storage.set(openClawModelIdsKey, ids);
+}
+
+export function generateOpenClawModels(): Model[] {
+  const baseUrl = getOpenClawBaseUrl();
+  const apiKey = getOpenClawApiKey();
+  const modelIds = getOpenClawModelIds();
+  if (!baseUrl || !modelIds) {
+    return [];
+  }
+  return modelIds
+    .split(',')
+    .map(id => id.trim().replace(/(\r\n|\n|\r)/gm, ''))
+    .filter(id => id.length > 0)
+    .map(modelId => {
+      const parts = modelId.split('/');
+      const displayName =
+        parts.length === 2 ? parts[1] : modelId;
+      return {
+        modelId,
+        modelName: displayName,
+        modelTag: ModelTag.OpenAICompatible,
+        uniqueId: 'openclaw',
         apiKey,
         apiUrl: baseUrl,
       } as Model;

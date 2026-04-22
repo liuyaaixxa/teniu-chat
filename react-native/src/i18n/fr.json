@@ -89,7 +89,13 @@
     "teniuAiApiKey": "API Key",
     "enterTeniuAiApiKey": "Entrer la clé API",
     "teniuAiModelIds": "ID du modèle",
-    "enterTeniuAiModelIds": "Entrer les IDs de modèle, séparés par des virgules"
+    "enterTeniuAiModelIds": "Entrer les IDs de modèle, séparés par des virgules",
+    "openClawBaseUrl": "URL de base",
+    "enterOpenClawBaseUrl": "http://127.0.0.1:18789/v1",
+    "openClawApiKey": "Jeton d'authentification",
+    "enterOpenClawApiKey": "Entrer le jeton d'authentification (facultatif)",
+    "openClawModelIds": "ID du modèle",
+    "enterOpenClawModelIds": "openclaw, openclaw/default"
   },
   "chat": {
     "message": "Message",
